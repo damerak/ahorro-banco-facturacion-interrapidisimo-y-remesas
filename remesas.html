@@ -1,0 +1,343 @@
+<!-- ... (Todo el CSS y HTML se mantiene igual) ... -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remesas Irusaga - POS 58mm</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #34a853;
+            --danger: #d93025;
+            --warning: #f9ab00;
+            --light: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0; padding: 20px;
+            background-color: #eef2f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- NAVEGACIÓN SUPERIOR --- */
+        .remesas-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .nav-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* --- CONTENEDORES PRINCIPALES --- */
+        .view { display: none; width: 100%; max-width: 1000px; }
+        .active { display: block; }
+
+        /* --- DISEÑO 2 COLUMNAS (PESOS A BS) --- */
+        .remesas-grid {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .card {
+            background: white; padding: 20px; border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;
+        }
+
+        label { font-weight: bold; font-size: 0.8rem; color: #555; display: block; margin-bottom: 4px; }
+
+        input {
+            width: 100%; padding: 10px; margin-bottom: 12px;
+            border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; margin-bottom: 5px;
+        }
+
+        .btn-print { background: #000; }
+        .highlight-res { color: var(--primary); font-size: 1.2rem; font-weight: bold; background: #f0f7ff; }
+        .highlight-profit { color: var(--secondary); font-size: 1.2rem; font-weight: bold; background: #f0fff4; }
+
+        /* --- ESTILO TICKET (PREVISUALIZACIÓN) --- */
+        .printable-area {
+            background: white; padding: 10px; border: 1px dashed #666;
+            width: 100%; box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #000;
+            text-transform: uppercase;
+        }
+
+        .ticket-header { text-align: center; font-size: 14px; margin-bottom: 8px; }
+        .ticket-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .ticket-table td { padding: 5px 0; vertical-align: middle; }
+        .ticket-divider { border-top: 1px dashed #000; margin: 8px 0; border-bottom: none; }
+
+        /* ==========================================
+           CONFIGURACIÓN DE IMPRESIÓN 58mm (48mm área)
+           ========================================== */
+        @media print {
+            @page {
+                size: 58mm auto; /* Ancho 58mm, largo automático */
+                margin: 0;
+            }
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+                width: 58mm;
+            }
+            .no-print, .remesas-nav, .view-content-form, h3, label, input, .btn, .remesas-grid > :not(.view-content-preview) {
+                display: none !important;
+            }
+            .view, .remesas-grid, .card {
+                display: block !important;
+                width: 58mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .view-content-preview {
+                width: 58mm !important;
+            }
+            .printable-area {
+                width: 48mm !important; /* Área real de impresión */
+                margin: 0 auto !important;
+                padding: 5mm 0 !important;
+                border: none !important;
+                display: block !important;
+            }
+            .ticket-header { font-size: 16px; }
+            .ticket-table { font-size: 14px; }
+        }
+
+        /* Responsivo para celulares (Pantalla) */
+        @media (max-width: 768px) {
+            .remesas-grid { grid-template-columns: 1fr; }
+            .printable-area { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="remesas-nav no-print">
+        <button id="btn-v" class="nav-btn active" onclick="showRemesas('view-venezuela', 'btn-v')">Pesos a Bolívares</button>
+        <button id="btn-b" class="nav-btn" onclick="showRemesas('view-bs-to-pesos', 'btn-b')">Bolívares a Pesos</button>
+    </div>
+
+    <!-- VISTA: PESOS A BS -->
+    <div id="view-venezuela" class="view active">
+        <div class="remesas-grid">
+            
+            <!-- Columna Izquierda: Formulario -->
+            <div class="view-content-form no-print">
+                <div class="card">
+                    <h3>Pesos -> Bolívares</h3>
+                    <div class="grid-2">
+                        <div>
+                            <label>Tasa Día</label>
+                            <input type="text" id="v-tasa-dia" placeholder="0.00" oninput="limitDecimals(this); calcVenezuela()">
+                        </div>
+                        <div>
+                            <label>Puntos (Referencia)</label>
+                            <input type="text" id="v-puntos" placeholder="0.00" oninput="limitDecimals(this); calcVenezuela()">
+                        </div>
+                    </div>
+                    
+                    <label>Tasa Venta (Suma Automática)</label>
+                    <input type="text" id="v-tasa-venta" readonly class="highlight-res">
+                    
+                    <label>Nombre del Cliente</label>
+                    <input type="text" id="v-nombre-cliente" placeholder="Escriba el nombre" oninput="calcVenezuela()" style="text-transform: uppercase;">
+
+                    <label>Pesos a Enviar</label>
+                    <input type="text" id="v-envio-pesos" placeholder="0" oninput="formatMoneyInput(this); calcVenezuela()">
+                    
+                    <label>Costo en Pesos (Tasa Día)</label>
+                    <input type="text" id="v-costo-pesos" readonly style="background-color: #fdfdfd;">
+
+                    <div class="grid-2">
+                        <div><label>Bolívares</label><input type="text" id="v-bs-llegan" readonly></div>
+                        <div><label>Ganancia</label><input type="text" id="v-ganancia" readonly class="highlight-profit"></div>
+                    </div>
+                    <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Recibo</button>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Vista Previa y lo que se imprime -->
+            <div class="view-content-preview">
+                <div class="card">
+                    <label class="no-print" style="text-align: center; margin-bottom: 10px;">Vista Previa (58mm)</label>
+                    <div id="vzla-ticket-preview" class="printable-area">
+                        <div class="ticket-header">MULTISERVICIOS IRUSAGA</div>
+                        <div class="ticket-header" style="font-size: 10px;">RECIBO DE ENVIO</div>
+                        <div class="ticket-divider"></div>
+                        <table class="ticket-table">
+                            <tr><td>FECHA:</td><td align="right"><span id="vz-date"></span></td></tr>
+                            <tr><td>CLIENTE:</td><td align="right"><span id="vz-nombre"></span></td></tr>
+                            <tr><td>TASA:</td><td align="right"><span id="vz-tasa"></span></td></tr>
+                            <tr><td>PESOS:</td><td align="right">$<span id="vz-pesos"></span></td></tr>
+                            <tr><td colspan="2" style="text-align: center; padding: 15px 0; border-bottom: none;">TOTAL A RECIBIR:<br><span style="font-size: 22px;">Bs <span id="vz-bs">0</span></span></td></tr>
+                        </table>
+                        <div class="ticket-divider"></div>
+                        <div style="font-size: 10px; text-align: center;">VERIFIQUE SUS DATOS<br>GRACIAS POR SU COMPRA</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- VISTA: BS A PESOS -->
+    <div id="view-bs-to-pesos" class="view">
+        <div class="card" style="max-width: 500px; margin: 0 auto;">
+            <h3>Bolívares -> Pesos</h3>
+            <label>Bolívares a Enviar</label>
+            <input type="text" id="bs-input-val" oninput="formatMoneyInput(this); calcBsToPesos()">
+            <label>Valor a Enviar En Pesos</label>
+            <input type="text" id="pesos-output-res" readonly class="highlight-res">
+        </div>
+    </div>
+
+    <!-- SCRIPTS FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
+            authDomain: "ahorrobancofacturacion.firebaseapp.com",
+            databaseURL: "https://ahorrobancofacturacion-default-rtdb.firebaseio.com",
+            projectId: "ahorrobancofacturacion",
+            storageBucket: "ahorrobancofacturacion.firebasestorage.app",
+            messagingSenderId: "1056148162736",
+            appId: "1:1056148162736:web:939aa574f76d22fea11375"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function showRemesas(viewId, btnId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.getElementById(btnId).classList.add('active');
+        }
+
+        window.onload = function() {
+            // Cargar desde Firebase
+            db.ref('remesas_config').once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    if (data.tasaDia) document.getElementById('v-tasa-dia').value = data.tasaDia;
+                    if (data.puntos) document.getElementById('v-puntos').value = data.puntos;
+                    calcVenezuela();
+                } else {
+                    const sT = localStorage.getItem('v-tasa-dia');
+                    const sP = localStorage.getItem('v-puntos');
+                    if (sT) document.getElementById('v-tasa-dia').value = sT;
+                    if (sP) document.getElementById('v-puntos').value = sP;
+                    calcVenezuela();
+                }
+            });
+        };
+
+        function formatMoneyInput(input) { 
+            let value = input.value.replace(/\D/g, ""); 
+            input.value = value ? new Intl.NumberFormat('de-DE').format(parseInt(value)) : ""; 
+        }
+
+        function limitDecimals(input) {
+            input.value = input.value.replace(/[^0-9.]/g, '');
+            const parts = input.value.split('.');
+            if (parts.length > 2) input.value = parts[0] + '.' + parts.slice(1).join('');
+            if (parts[1] && parts[1].length > 2) {
+                input.value = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+        }
+
+        function parseMoney(str) { 
+            if (!str) return 0;
+            let s = str.toString();
+            let clean = s.replace(/\./g, '').replace(/,/g, '');
+            return parseFloat(clean) || 0; 
+        }
+
+        function formatDisp(num) { 
+            return new Intl.NumberFormat('de-DE').format(Math.round(num)); 
+        }
+
+        function calcVenezuela() {
+            const tDiaVal = document.getElementById('v-tasa-dia').value;
+            const puntosVal = document.getElementById('v-puntos').value;
+            const nombreCliente = document.getElementById('v-nombre-cliente').value.toUpperCase();
+            
+            localStorage.setItem('v-tasa-dia', tDiaVal); 
+            localStorage.setItem('v-puntos', puntosVal);
+            
+            // Sincronizar con Firebase
+            db.ref('remesas_config').set({ tasaDia: tDiaVal, puntos: puntosVal });
+
+            const tDia = parseFloat(tDiaVal) || 0;
+            const puntos = parseFloat(puntosVal) || 0;
+            const ePesos = parseMoney(document.getElementById('v-envio-pesos').value);
+            
+            const tVenta = tDia + puntos;
+            const tVentaLimpia = parseFloat(tVenta.toFixed(2));
+            document.getElementById('v-tasa-venta').value = tVenta > 0 ? tVentaLimpia : "";
+
+            if (tVenta > 0) {
+                const bs = ePesos / tVenta;
+                const costoPesosTasaDia = bs * tDia;
+                const ganancia = ePesos - costoPesosTasaDia;
+                
+                document.getElementById('v-bs-llegan').value = formatDisp(bs);
+                document.getElementById('v-costo-pesos').value = formatDisp(costoPesosTasaDia);
+                document.getElementById('v-ganancia').value = formatDisp(ganancia);
+                
+                document.getElementById('vz-date').innerText = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                document.getElementById('vz-nombre').innerText = nombreCliente || "CONSUMIDOR FINAL";
+                document.getElementById('vz-tasa').innerText = tVentaLimpia; 
+                document.getElementById('vz-pesos').innerText = formatDisp(ePesos);
+                document.getElementById('vz-bs').innerText = formatDisp(bs);
+            } else {
+                document.getElementById('v-bs-llegan').value = ""; 
+                document.getElementById('vz-bs').innerText = "0";
+            }
+        }
+
+        function calcBsToPesos() {
+            const tVenta = parseFloat(document.getElementById('v-tasa-venta').value) || 0;
+            const bs = parseMoney(document.getElementById('bs-input-val').value);
+            document.getElementById('pesos-output-res').value = (tVenta > 0 && bs > 0) ? formatDisp(bs * tVenta) : "";
+        }
+    </script>
+</body>
+</html>

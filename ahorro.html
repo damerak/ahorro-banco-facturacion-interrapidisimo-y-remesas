@@ -1,0 +1,256 @@
+<!-- ... (Se mantiene CSS y HTML igual) ... -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retos de Ahorro - Irusaga</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #34a853;
+            --danger: #d93025;
+            --light: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0; padding: 20px;
+            background-color: #e9ecef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px; /* Aumentado para que quepan los dos */
+        }
+
+        /* Contenedor para ponerlos lado a lado */
+        .challenges-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap; /* Para que en celular se pongan uno abajo del otro */
+            justify-content: center;
+        }
+
+        .view { 
+            flex: 1;
+            min-width: 320px; /* Tamaño mínimo para que no se deformen */
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        h3 { margin-top: 0; color: #333; }
+
+        /* --- TABLAS AHORRO --- */
+        .savings-table {
+            margin: 15px auto;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .savings-table td {
+            border: 1px solid #ddd;
+            padding: 12px 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .savings-table td:hover {
+            background-color: #f1f1f1;
+        }
+
+        .savings-table td input[type="checkbox"] {
+            transform: scale(1.3);
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .cell-selected {
+            background-color: #ffeb3b !important;
+            border-color: #fbc02d !important;
+        }
+
+        .savings-footer {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 15px;
+            border-top: 2px solid #eee;
+            color: var(--secondary);
+        }
+
+        .btn-clear {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            text-transform: uppercase;
+            background: var(--danger);
+            margin-top: 15px;
+        }
+
+        @media (max-width: 400px) {
+            .savings-table td { font-size: 0.9rem; padding: 8px 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="challenges-grid">
+            <!-- VISTA 500K -->
+            <div id="view-500" class="view">
+                <div class="card">
+                    <h3>💰 Reto: $500.000</h3>
+                    <table class="savings-table" id="table-500"></table>
+                    <div class="savings-footer">Faltante: <span id="total-500">$500.000</span></div>
+                    <button class="btn-clear" onclick="resetChallenge(500)">Limpiar Reto 500k</button>
+                </div>
+            </div>
+
+            <!-- VISTA 1000K -->
+            <div id="view-1000" class="view">
+                <div class="card">
+                    <h3>💰 Reto: $1.000.000</h3>
+                    <table class="savings-table" id="table-1000"></table>
+                    <div class="savings-footer">Faltante: <span id="total-1000">$1.000.000</span></div>
+                    <button class="btn-clear" onclick="resetChallenge(1000)">Limpiar Reto 1.000k</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
+        authDomain: "ahorrobancofacturacion.firebaseapp.com",
+        databaseURL: "https://ahorrobancofacturacion-default-rtdb.firebaseio.com",
+        projectId: "ahorrobancofacturacion",
+        storageBucket: "ahorrobancofacturacion.firebasestorage.app",
+        messagingSenderId: "1056148162736",
+        appId: "1:1056148162736:web:939aa574f76d22fea11375"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const val500 = [20000,20000,20000,20000,20000,20000,25000,25000,25000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,25000,20000,20000];
+    const val1000 = [25000,25000,25000,35000,35000,35000,45000,45000,45000,25000,25000,25000,35000,35000,35000,45000,45000,45000,25000,25000,25000,35000,35000,30000,45000,45000,45000,20000,20000,20000];
+
+    window.onload = () => {
+        // Cargar desde Firebase
+        db.ref('ahorros').once('value', (snapshot) => {
+            const cloudData = snapshot.val() || {};
+            if(cloudData.save_500) localStorage.setItem('save_500', JSON.stringify(cloudData.save_500));
+            if(cloudData.save_1000) localStorage.setItem('save_1000', JSON.stringify(cloudData.save_1000));
+            
+            initChallenge(500, val500, 'table-500', 'save_500', 'total-500');
+            initChallenge(1000, val1000, 'table-1000', 'save_1000', 'total-1000');
+        });
+    };
+
+    function formatDisp(num) {
+        return new Intl.NumberFormat('de-DE').format(Math.round(num));
+    }
+
+    function initChallenge(meta, dataArr, tableId, storageKey, displayId) {
+        const table = document.getElementById(tableId);
+        const saved = JSON.parse(localStorage.getItem(storageKey)) || [];
+        
+        table.innerHTML = "";
+        let row;
+
+        dataArr.forEach((val, idx) => {
+            if (idx % 3 === 0) row = table.insertRow();
+            const cell = row.insertCell();
+            const isChecked = saved.includes(idx);
+            
+            if(isChecked) cell.classList.add('cell-selected');
+            
+            cell.innerHTML = `
+                <input type="checkbox" id="${tableId}-ch-${idx}" ${isChecked ? 'checked' : ''}>
+                <span>$${formatDisp(val)}</span>
+            `;
+
+            cell.onclick = (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    const cb = cell.querySelector('input');
+                    cb.checked = !cb.checked;
+                    toggleCell(idx, val, tableId, storageKey, meta, displayId, cell, cb);
+                }
+            };
+
+            cell.querySelector('input').onchange = (e) => {
+                toggleCell(idx, val, tableId, storageKey, meta, displayId, cell, e.target);
+            };
+        });
+
+        updateTotal(meta, dataArr, storageKey, displayId);
+    }
+
+    function toggleCell(idx, val, tableId, storageKey, meta, displayId, cell, checkbox) {
+        let saved = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+        if (checkbox.checked) {
+            cell.classList.add('cell-selected');
+            if (!saved.includes(idx)) saved.push(idx);
+        } else {
+            cell.classList.remove('cell-selected');
+            saved = saved.filter(i => i !== idx);
+        }
+
+        localStorage.setItem(storageKey, JSON.stringify(saved));
+        // Sincronizar con Firebase
+        db.ref('ahorros/' + storageKey).set(saved);
+        
+        updateTotal(meta, (meta === 500 ? val500 : val1000), storageKey, displayId);
+    }
+
+    function updateTotal(meta, dataArr, storageKey, displayId) {
+        const saved = JSON.parse(localStorage.getItem(storageKey)) || [];
+        let sumaTotal = 0;
+        saved.forEach(idx => sumaTotal += dataArr[idx]);
+        
+        const faltante = (meta * 1000) - sumaTotal;
+        document.getElementById(displayId).innerText = `$${formatDisp(faltante)}`;
+        
+        if(faltante <= 0) {
+            document.getElementById(displayId).style.color = "#34a853";
+            document.getElementById(displayId).innerText = "¡RETO COMPLETADO!";
+        } else {
+            document.getElementById(displayId).style.color = "var(--secondary)";
+        }
+    }
+
+    function resetChallenge(meta) {
+        if(confirm(`¿Estás seguro de reiniciar el progreso del reto de ${meta}k?`)) {
+            const key = meta === 500 ? 'save_500' : 'save_1000';
+            localStorage.removeItem(key);
+            db.ref('ahorros/' + key).remove();
+            if(meta === 500) initChallenge(500, val500, 'table-500', 'save_500', 'total-500');
+            else initChallenge(1000, val1000, 'table-1000', 'save_1000', 'total-1000');
+        }
+    }
+</script>
+</body>
+</html>

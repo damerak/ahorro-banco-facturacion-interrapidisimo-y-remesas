@@ -1,0 +1,283 @@
+<!-- ... (CSS y HTML igual) ... -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irusaga - Logística Interrapidísimo</title>
+    
+    <link rel="icon" href="favicon.png" type="image/png">
+    
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #34a853;
+            --danger: #d93025;
+            --warning: #f9ab00;
+            --light: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0; padding: 0;
+            background-color: var(--light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* --- CONTENIDO --- */
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+        header { 
+            background: var(--primary); color: white; padding: 15px 25px; 
+            font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 1.1rem;
+            text-align: center;
+        }
+        
+        .container { padding: 25px; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; margin-bottom: 5px;
+        }
+        .btn-clear { background: var(--danger); }
+
+        /* --- ESTILOS INTERRAPIDISIMO --- */
+        #view-inter * { font-family: Arial, Helvetica, sans-serif !important; font-weight: bold !important; font-size: 15px !important; box-sizing: border-box; }
+        #view-inter .header-controls-inter {
+            background: white; padding: 15px 30px; border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; gap: 25px;
+            align-items: center; margin-bottom: 20px; width: 100%;
+            justify-content: center;
+        }
+        #view-inter .table-container-inter {
+            display: flex; gap: 25px; flex-wrap: wrap; justify-content: center;
+            background: white; padding: 15px; border: 1px solid #888; border-radius: 4px;
+        }
+        #view-inter table { border-collapse: collapse; width: 100%; }
+        #view-inter th, #view-inter td { border: 1px solid #000; padding: 0; text-align: center; height: 40px; }
+        #view-inter thead th { background-color: #e9ecef; text-transform: uppercase; padding: 8px; }
+        #view-inter .date-col { background-color: #FFC107; width: 95px; padding: 8px; }
+        
+        /* Ajuste para que toda la celda sea clicable */
+        #view-inter .currency-col { text-align: left; position: relative; cursor: text; }
+        #view-inter .currency-prefix { padding-left: 12px; }
+        #view-inter .currency-input { 
+            width: calc(100% - 25px); border: none; text-align: right; outline: none; 
+            background: transparent; height: 100%; padding-right: 12px;
+        }
+        
+        #view-inter .small-input { 
+            width: 100%; height: 100%; border: none; text-align: center; 
+            outline: none; background: transparent; 
+        }
+
+        /* Quitar flechas de los inputs de número */
+        #view-inter input::-webkit-outer-spin-button,
+        #view-inter input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #view-inter input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        #view-inter .footer-summary-inter {
+            margin-top: 25px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%;
+        }
+        #view-inter .summary-box-inter {
+            background: white; padding: 15px 20px; border-radius: 10px; border: 3px solid #FFC107;
+            display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 220px;
+        }
+        #view-inter .val-display-inter { font-size: 20px !important; color: #2e7d32; }
+
+        select {
+            padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem;
+        }
+
+        @media print {
+            header, .header-controls-inter, .btn-clear { display: none !important; }
+            body { background: white; }
+            .main-wrapper { overflow: visible; }
+            .container { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <header>Control de Envíos Interrapidísimo</header>
+    <div class="container">
+        <div id="view-inter">
+            <div class="header-controls-inter">
+                <div>AÑO: <select id="yearSelectInter"></select></div>
+                <div>MES: 
+                    <select id="monthSelectInter">
+                        <option value="0">ENERO</option><option value="1">FEBRERO</option>
+                        <option value="2">MARZO</option><option value="3">ABRIL</option>
+                        <option value="4">MAYO</option><option value="5">JUNIO</option>
+                        <option value="6">JULIO</option><option value="7">AGOSTO</option>
+                        <option value="8">SEPTIEMBRE</option><option value="9">OCTUBRE</option>
+                        <option value="10">NOVIEMBRE</option><option value="11">DICIEMBRE</option>
+                    </select>
+                </div>
+                <button class="btn btn-clear" style="width: auto;" onclick="clearAllFieldsInter()">LIMPIAR MES</button>
+            </div>
+            <div class="table-container-inter" id="mainContainerInter"></div>
+            <div class="footer-summary-inter">
+                <div class="summary-box-inter"><span>TOTAL VALOR</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color: #2196F3;"><span>TOTAL ENVÍOS</span><span id="totalEnviosInter" class="val-display-inter" style="color: #1976D2;">0</span></div>
+                <div class="summary-box-inter" style="border-color: #f44336;"><span>20% GANADO</span><span id="totalGananciaInter" class="val-display-inter" style="color: #c62828;">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color: #9c27b0;"><span>IMPUESTO ICA</span><span id="totalIcaInter" class="val-display-inter" style="color: #7b1fa2;">$ 0</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
+        authDomain: "ahorrobancofacturacion.firebaseapp.com",
+        databaseURL: "https://ahorrobancofacturacion-default-rtdb.firebaseio.com",
+        projectId: "ahorrobancofacturacion",
+        storageBucket: "ahorrobancofacturacion.firebasestorage.app",
+        messagingSenderId: "1056148162736",
+        appId: "1:1056148162736:web:939aa574f76d22fea11375"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const monthSelectInter = document.getElementById('monthSelectInter');
+    const yearSelectInter = document.getElementById('yearSelectInter');
+    const containerInter = document.getElementById('mainContainerInter');
+    const totalGeneralDispInter = document.getElementById('totalGeneralInter');
+    const totalEnviosDispInter = document.getElementById('totalEnviosInter');
+    const totalGananciaDispInter = document.getElementById('totalGananciaInter');
+    const totalIcaDispInter = document.getElementById('totalIcaInter');
+
+    function initInter() {
+        const currentYear = new Date().getFullYear();
+        for(let i = currentYear - 2; i <= currentYear + 2; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.innerHTML = i;
+            if(i === currentYear) opt.selected = true;
+            yearSelectInter.appendChild(opt);
+        }
+        monthSelectInter.value = new Date().getMonth();
+        monthSelectInter.onchange = generateTablesInter;
+        yearSelectInter.onchange = generateTablesInter;
+        generateTablesInter();
+    }
+
+    function formatWithDotsInter(n) { 
+        if(!n) return "";
+        return n.toString().replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, "."); 
+    }
+    function cleanDotsInter(s) { return s.toString().replace(/\./g, "") || "0"; }
+    function getStorageKeyInter() { return `inter_local_${yearSelectInter.value}_${monthSelectInter.value}`; }
+
+    function saveInterData() {
+        const rows = document.querySelectorAll('.data-row-inter');
+        const dataToSave = {};
+        rows.forEach(row => {
+            const dateKey = row.getAttribute('data-date');
+            dataToSave[dateKey] = {
+                m: cleanDotsInter(row.querySelector('.currency-input').value),
+                a: row.querySelector('.val-a').value,
+                b: row.querySelector('.val-b').value
+            };
+        });
+        const key = getStorageKeyInter();
+        localStorage.setItem(key, JSON.stringify(dataToSave));
+        db.ref('logistica/' + key).set(dataToSave);
+        calculateSummariesInter();
+    }
+
+    function calculateSummariesInter() {
+        let totalDinero = 0;
+        let totalCantidades = 0;
+        document.querySelectorAll('.data-row-inter').forEach(row => {
+            totalDinero += parseInt(cleanDotsInter(row.querySelector('.currency-input').value)) || 0;
+            const a = parseInt(row.querySelector('.val-a').value) || 0;
+            const b = parseInt(row.querySelector('.val-b').value) || 0;
+            const sumaFila = a + b;
+            totalCantidades += sumaFila;
+            row.querySelector('.row-total-inter').innerHTML = sumaFila > 0 ? sumaFila : "";
+        });
+        const ganancia = Math.floor(totalDinero * 0.20);
+        const impuestoIca = Math.floor(totalDinero * 0.00414);
+        totalGeneralDispInter.innerHTML = "$ " + formatWithDotsInter(totalDinero || 0);
+        totalEnviosDispInter.innerHTML = totalCantidades;
+        totalGananciaDispInter.innerHTML = "$ " + formatWithDotsInter(ganancia);
+        totalIcaDispInter.innerHTML = "$ " + formatWithDotsInter(impuestoIca);
+    }
+
+    function generateTablesInter() {
+        const year = parseInt(yearSelectInter.value);
+        const month = parseInt(monthSelectInter.value);
+        const key = getStorageKeyInter();
+        
+        db.ref('logistica/' + key).once('value', (snapshot) => {
+            const cloudData = snapshot.val();
+            if(cloudData) localStorage.setItem(key, JSON.stringify(cloudData));
+            
+            let savedData = JSON.parse(localStorage.getItem(key)) || {};
+            containerInter.innerHTML = '';
+            let days = [];
+            let date = new Date(year, month, 1);
+            while (date.getMonth() === month) {
+                if (date.getDay() !== 0) {
+                    let mName = date.toLocaleString('es-ES', { month: 'short' }).toUpperCase();
+                    days.push(`${mName}-${date.getDate()}`);
+                }
+                date.setDate(date.getDate() + 1);
+            }
+            containerInter.appendChild(createTableInter(days, savedData));
+            calculateSummariesInter();
+        });
+    }
+
+    function createTableInter(dayList, savedData) {
+        const table = document.createElement('table');
+        table.innerHTML = `<thead><tr><th>MES</th><th>VALOR</th><th>CANT 1</th><th>CANT 2</th><th>TOTAL</th></tr></thead>`;
+        const tbody = document.createElement('tbody');
+        dayList.forEach(dayStr => {
+            const tr = document.createElement('tr');
+            tr.className = 'data-row-inter';
+            tr.setAttribute('data-date', dayStr);
+            const rowData = savedData[dayStr] || { m: "", a: "", b: "" };
+            tr.innerHTML = `
+                <td class="date-col">${dayStr}</td>
+                <td class="currency-col" onclick="this.querySelector('.currency-input').focus()">
+                    <span class="currency-prefix">$</span>
+                    <input class="currency-input" type="text" value="${rowData.m ? formatWithDotsInter(rowData.m) : ""}">
+                </td>
+                <td><input type="number" class="small-input val-a" value="${rowData.a || ""}"></td>
+                <td><input type="number" class="small-input val-b" value="${rowData.b || ""}"></td>
+                <td class="row-total-inter"></td>`;
+            tr.querySelector('.currency-input').oninput = (e) => { e.target.value = formatWithDotsInter(e.target.value); saveInterData(); };
+            tr.querySelector('.val-a').oninput = saveInterData;
+            tr.querySelector('.val-b').oninput = saveInterData;
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        return table;
+    }
+
+    function clearAllFieldsInter() {
+        if(confirm("¿Borrar datos del mes?")) {
+            const key = getStorageKeyInter();
+            localStorage.removeItem(key);
+            db.ref('logistica/' + key).remove();
+            generateTablesInter();
+        }
+    }
+    window.onload = initInter;
+</script>
+</body>
+</html>

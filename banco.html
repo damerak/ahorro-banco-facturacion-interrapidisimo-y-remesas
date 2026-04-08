@@ -1,0 +1,391 @@
+<!-- ... (CSS y HTML se mantiene igual) ... -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Bancario - Irusaga</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --green-excel: #008001;
+            --yellow-excel: #FFFF00;
+            --cyan-excel: #00FFFF;
+            --gray-row: #D9D9D9;
+            --red-text: #FF0000;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* CONTENEDOR PRINCIPAL */
+        .corr-container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border: 2px solid black;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: white;
+        }
+
+        /* GRID DE CABECERA */
+        .header-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .cell {
+            border: 1px solid black;
+            padding: 4px 8px;
+            font-weight: bold;
+            font-size: 13px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+        }
+
+        .bg-green { background-color: var(--green-excel); color: white; }
+        .bg-yellow { background-color: var(--yellow-excel); color: black; }
+        .bg-cyan { background-color: var(--cyan-excel); color: black; }
+        .bg-black { background-color: black; color: white; justify-content: center; }
+        .text-red { color: var(--red-text) !important; }
+
+        input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-weight: bold;
+            font-size: 13px;
+            outline: none;
+        }
+
+        /* TABLA DE MOVIMIENTOS */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            background-color: var(--green-excel);
+            color: white;
+            border: 1px solid black;
+            padding: 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        td {
+            border: 1px solid black;
+            background-color: var(--gray-row);
+            padding: 0;
+            height: 35px;
+        }
+
+        select {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            font-weight: bold;
+            padding: 0 5px;
+            cursor: pointer;
+        }
+
+        .input-valor {
+            padding-left: 10px;
+            color: var(--red-text);
+            width: 90%;
+            height: 100%;
+        }
+
+        .td-saldo {
+            text-align: right;
+            padding-right: 10px;
+            color: var(--red-text);
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .btn-borrar-corr {
+            background: black;
+            color: white;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            height: 100%;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        .btn-borrar-corr:hover {
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="corr-container">
+    <div class="sticky-top">
+        <!-- Panel Superior de Resumen -->
+        <div class="header-grid">
+            <div class="cell bg-green">Saldo Inicio</div>
+            <div class="cell bg-yellow text-red">$ <input type="text" id="saldo-inicio" value="0" oninput="formatAndCalc(this)"></div>
+            <div class="cell"><button class="btn-borrar-corr" onclick="resetCorresponsal()">Borrar Día</button></div>
+            <div class="cell bg-black">Transacciones</div>
+            <div class="cell bg-yellow" style="justify-content: center;" id="total-trans">0</div>
+
+            <div class="cell bg-green">Saldo</div>
+            <div class="cell bg-yellow text-red">$ <span id="resumen-saldo">0</span></div>
+            <div class="cell bg-cyan">Compensaciones</div>
+            <div class="cell bg-yellow">Deposito</div>
+            <div class="cell bg-yellow text-red">$ <span id="resumen-deposito">0</span></div>
+
+            <div class="cell bg-green text-red" style="font-size: 11px;">Cupo Disponible</div>
+            <div class="cell bg-yellow text-red">$ <input type="text" id="cupo" value="0" readonly></div>
+            <div class="cell bg-cyan"></div>
+            <div class="cell bg-yellow">Retiro</div>
+            <div class="cell bg-yellow text-red">$ <span id="resumen-retiro">0</span></div>
+
+            <div class="cell bg-green">Saldo Efectivo</div>
+            <div class="cell bg-yellow text-red">$ <span id="resumen-efectivo">0</span></div>
+            <div class="cell bg-cyan"></div>
+            <div class="cell bg-yellow">Fecha</div>
+            <div class="cell bg-yellow"><input type="date" id="corr-fecha" onchange="handleDateChange()"></div>
+        </div>
+
+        <!-- Encabezados de Tabla -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 35%;">Explicación (Tipo)</th>
+                    <th style="width: 25%;">Valor</th>
+                    <th style="width: 40%;">Saldo en Línea</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+
+    <!-- Cuerpo de la Tabla -->
+    <table>
+        <tbody id="filas-corresponsal">
+            <!-- Dinámico -->
+        </tbody>
+    </table>
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
+        authDomain: "ahorrobancofacturacion.firebaseapp.com",
+        databaseURL: "https://ahorrobancofacturacion-default-rtdb.firebaseio.com",
+        projectId: "ahorrobancofacturacion",
+        storageBucket: "ahorrobancofacturacion.firebasestorage.app",
+        messagingSenderId: "1056148162736",
+        appId: "1:1056148162736:web:939aa574f76d22fea11375"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const tablaCorr = document.getElementById('filas-corresponsal');
+    const inputFecha = document.getElementById('corr-fecha');
+    const CUPO_BASE = 5000000;
+
+    window.onload = function() {
+        const today = new Date().toISOString().split('T')[0];
+        inputFecha.value = today;
+        initCorresponsal();
+    };
+
+    function handleDateChange() {
+        initCorresponsal();
+    }
+
+    function buscarUltimoSaldoFinal(fechaActualStr) {
+        let fecha = new Date(fechaActualStr + 'T12:00:00');
+        for (let i = 1; i <= 30; i++) {
+            fecha.setDate(fecha.getDate() - 1);
+            let checkStr = fecha.toISOString().split('T')[0];
+            let data = localStorage.getItem('corresponsalData_' + checkStr);
+            if (data) {
+                let parsed = JSON.parse(data);
+                let saldoCierre = parseMoney(parsed.saldoInicio);
+                if (parsed.filas) {
+                    parsed.filas.forEach(f => {
+                        let v = parseMoney(f.valor);
+                        if (f.tipo === "Retiro") saldoCierre -= v;
+                        if (f.tipo === "Deposito") saldoCierre += v;
+                    });
+                }
+                return saldoCierre;
+            }
+        }
+        return 0;
+    }
+
+    function initCorresponsal() {
+        tablaCorr.innerHTML = '';
+        const fecha = inputFecha.value;
+        
+        // Sincronizar desde Firebase antes de mostrar
+        db.ref('banco/' + fecha).once('value', (snapshot) => {
+            const cloudData = snapshot.val();
+            if(cloudData) {
+                localStorage.setItem('corresponsalData_' + fecha, JSON.stringify(cloudData));
+            }
+            
+            const savedData = JSON.parse(localStorage.getItem('corresponsalData_' + fecha));
+            if (savedData) {
+                document.getElementById('saldo-inicio').value = savedData.saldoInicio || "0";
+                if (savedData.filas && savedData.filas.length > 0) {
+                    savedData.filas.forEach(f => { crearFilaCorr(f.tipo, f.valor); });
+                }
+            } else {
+                const saldoArrastrado = buscarUltimoSaldoFinal(fecha);
+                document.getElementById('saldo-inicio').value = saldoArrastrado.toLocaleString('es-CO');
+            }
+
+            if (tablaCorr.querySelectorAll('tr').length === 0) {
+                crearFilaCorr();
+            }
+            calcularCorr();
+        });
+    }
+
+    function crearFilaCorr(tipo = "", valor = "") {
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="width: 35%;">
+                <select class="select-exp" onchange="handleRowChange(this)">
+                    <option value="" ${tipo === "" ? "selected" : ""}>-- Seleccione --</option>
+                    <option value="Retiro" ${tipo === "Retiro" ? "selected" : ""}>Retiro</option>
+                    <option value="Deposito" ${tipo === "Deposito" ? "selected" : ""}>Deposito</option>
+                </select>
+            </td>
+            <td style="width: 25%;"><input type="text" class="input-valor" oninput="handleRowChange(this)" placeholder="0" value="${valor}"></td>
+            <td style="width: 40%;" class="td-saldo">$ <span>0</span></td>
+        `;
+        tablaCorr.appendChild(tr);
+    }
+
+    function handleRowChange(element) {
+        if (element.classList.contains('input-valor')) {
+            let val = element.value.replace(/\D/g, "");
+            element.value = val === "" ? "" : Number(val).toLocaleString('es-CO');
+        }
+        const filaActual = element.closest('tr');
+        if (!filaActual.nextElementSibling) {
+            const tipo = filaActual.querySelector('.select-exp').value;
+            const valor = filaActual.querySelector('.input-valor').value;
+            if (tipo !== "" || valor !== "") {
+                crearFilaCorr();
+            }
+        }
+        calcularCorr();
+    }
+
+    function formatAndCalc(input) {
+        let val = input.value;
+        let isNegative = val.trim().startsWith('-');
+        let digits = val.replace(/\D/g, "");
+        if (digits === "" && isNegative) {
+            input.value = "-";
+        } else if (digits === "") {
+            input.value = "0";
+        } else {
+            let num = parseInt(digits) * (isNegative ? -1 : 1);
+            input.value = num.toLocaleString('es-CO');
+        }
+        calcularCorr();
+    }
+
+    function parseMoney(str) {
+        if (!str || str === "-") return 0;
+        return parseFloat(str.toString().replace(/\./g, '').replace(/,/g, '')) || 0;
+    }
+
+    function calcularCorr() {
+        const saldoInicioBase = parseMoney(document.getElementById('saldo-inicio').value);
+        let currentSaldoAcumulado = saldoInicioBase;
+        let sumaRetiros = 0;
+        let sumaDepositos = 0;
+        let contadorTrans = 0;
+
+        tablaCorr.querySelectorAll('tr').forEach(fila => {
+            const tipo = fila.querySelector('.select-exp').value;
+            const valorInput = fila.querySelector('.input-valor').value;
+            const valorNum = parseMoney(valorInput);
+            const displaySaldoFila = fila.querySelector('.td-saldo span');
+
+            if (tipo && valorNum > 0) {
+                contadorTrans++;
+                if (tipo === "Retiro") {
+                    currentSaldoAcumulado -= valorNum;
+                    sumaRetiros += valorNum;
+                } else if (tipo === "Deposito") {
+                    currentSaldoAcumulado += valorNum;
+                    sumaDepositos += valorNum;
+                }
+            }
+            displaySaldoFila.innerText = currentSaldoAcumulado.toLocaleString('es-CO');
+        });
+
+        document.getElementById('resumen-saldo').innerText = saldoInicioBase.toLocaleString('es-CO');
+        document.getElementById('resumen-efectivo').innerText = currentSaldoAcumulado.toLocaleString('es-CO');
+        document.getElementById('resumen-retiro').innerText = sumaRetiros.toLocaleString('es-CO');
+        document.getElementById('resumen-deposito').innerText = sumaDepositos.toLocaleString('es-CO');
+        document.getElementById('total-trans').innerText = contadorTrans;
+        
+        const cupoCalc = CUPO_BASE - currentSaldoAcumulado;
+        document.getElementById('cupo').value = cupoCalc.toLocaleString('es-CO');
+
+        saveToLocal();
+    }
+
+    function saveToLocal() {
+        const fecha = inputFecha.value;
+        if (!fecha) return;
+        const filas = [];
+        tablaCorr.querySelectorAll('tr').forEach(fila => {
+            const tipo = fila.querySelector('.select-exp').value;
+            const valor = fila.querySelector('.input-valor').value;
+            if (tipo !== "" || valor !== "") {
+                filas.push({ tipo, valor });
+            }
+        });
+        const data = {
+            saldoInicio: document.getElementById('saldo-inicio').value,
+            filas: filas
+        };
+        localStorage.setItem('corresponsalData_' + fecha, JSON.stringify(data));
+        // Sincronizar con Firebase
+        db.ref('banco/' + fecha).set(data);
+    }
+
+    function resetCorresponsal() {
+        const fecha = inputFecha.value;
+        if(confirm(`¿Estás seguro de que deseas borrar los datos del día ${fecha}?`)) {
+            localStorage.removeItem('corresponsalData_' + fecha);
+            db.ref('banco/' + fecha).remove();
+            initCorresponsal();
+        }
+    }
+</script>
+</body>
+</html>
