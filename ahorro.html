@@ -1,4 +1,3 @@
-<!-- ... (Se mantiene CSS y HTML igual) ... -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,73 +9,69 @@
             --primary: #1a73e8;
             --secondary: #34a853;
             --danger: #d93025;
-            --light: #f8f9fa;
+            --warning: #f9ab00;
+            --dark: #3c4043;
         }
 
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0; padding: 20px;
             background-color: #e9ecef;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        .container {
-            width: 100%;
-            max-width: 1200px; /* Aumentado para que quepan los dos */
-        }
+        .container { width: 100%; max-width: 1200px; }
 
-        /* Contenedor para ponerlos lado a lado */
         .challenges-grid {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap; /* Para que en celular se pongan uno abajo del otro */
-            justify-content: center;
+            display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;
         }
 
-        .view { 
-            flex: 1;
-            min-width: 320px; /* Tamaño mínimo para que no se deformen */
-        }
+        .view { flex: 1; min-width: 340px; }
 
         .card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
+            background: white; padding: 20px; border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center; height: 100%; box-sizing: border-box;
+            display: flex; flex-direction: column;
+        }
+
+        h3 { margin-top: 0; color: var(--dark); min-height: 40px; display: flex; align-items: center; justify-content: center; }
+
+        .input-title {
+            font-size: 1.2rem;
+            font-weight: bold;
             text-align: center;
-            height: 100%;
-            box-sizing: border-box;
+            border: 1px dashed var(--primary);
+            border-radius: 4px;
+            padding: 5px;
+            width: 90%;
+            color: var(--primary);
+            font-family: inherit;
         }
 
-        h3 { margin-top: 0; color: #333; }
-
-        /* --- TABLAS AHORRO --- */
-        .savings-table {
-            margin: 15px auto;
-            border-collapse: collapse;
-            width: 100%;
-        }
+        .savings-table { margin: 15px auto; border-collapse: collapse; width: 100%; }
 
         .savings-table td {
-            border: 1px solid #ddd;
-            padding: 12px 8px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: background 0.2s;
+            border: 1px solid #ddd; padding: 10px 5px;
+            font-weight: bold; font-size: 1rem; text-align: center;
+            cursor: pointer; transition: background 0.2s;
+            width: 33.33%;
         }
 
-        .savings-table td:hover {
-            background-color: #f1f1f1;
-        }
+        .savings-table td:hover { background-color: #f8f9fa; }
 
         .savings-table td input[type="checkbox"] {
-            transform: scale(1.3);
-            margin-right: 10px;
-            cursor: pointer;
+            transform: scale(1.2); margin-right: 8px; cursor: pointer;
+        }
+
+        .input-edit {
+            width: 90%; padding: 6px; font-size: 0.9rem;
+            text-align: center; border: 1px solid var(--primary);
+            border-radius: 4px; font-weight: bold;
+        }
+
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
         }
 
         .cell-selected {
@@ -85,29 +80,31 @@
         }
 
         .savings-footer {
-            margin-top: 20px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            padding: 15px;
-            border-top: 2px solid #eee;
-            color: var(--secondary);
+            margin-top: auto; font-size: 1.4rem; font-weight: bold;
+            padding: 15px; border-top: 2px solid #eee; color: var(--secondary);
         }
 
-        .btn-clear {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            text-transform: uppercase;
-            background: var(--danger);
-            margin-top: 15px;
+        .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+        button {
+            flex: 1; padding: 10px 5px; border: none; border-radius: 6px;
+            font-weight: bold; color: white; cursor: pointer;
+            text-transform: uppercase; font-size: 0.8rem;
+        }
+
+        .btn-edit { background: var(--primary); }
+        .btn-save { background: var(--secondary); }
+        .btn-clear { background: var(--danger); }
+        .btn-action { background: var(--dark); }
+
+        .edit-controls {
+            display: flex; gap: 5px; margin-bottom: 10px;
+            justify-content: center; background: #f1f3f4;
+            padding: 10px; border-radius: 8px;
         }
 
         @media (max-width: 400px) {
-            .savings-table td { font-size: 0.9rem; padding: 8px 4px; }
+            .savings-table td { font-size: 0.85rem; }
         }
     </style>
 </head>
@@ -115,33 +112,66 @@
 
     <div class="container">
         <div class="challenges-grid">
-            <!-- VISTA 500K -->
+            
+            <!-- VISTA RETO 1 -->
             <div id="view-500" class="view">
                 <div class="card">
-                    <h3>💰 Reto: $500.000</h3>
+                    <h3 id="container-title-500"><span id="title-500">💰 Reto 1</span></h3>
+                    
+                    <div id="controls-500" class="edit-controls" style="display:none;">
+                        <button class="btn-action" onclick="adjustCells(500, 1)">+ Añadir Cuadro</button>
+                        <button class="btn-action" onclick="adjustCells(500, -1)">- Quitar Cuadro</button>
+                    </div>
+
                     <table class="savings-table" id="table-500"></table>
-                    <div class="savings-footer">Faltante: <span id="total-500">$500.000</span></div>
-                    <button class="btn-clear" onclick="resetChallenge(500)">Limpiar Reto 500k</button>
+                    
+                    <div class="savings-footer">
+                        <small id="footer-label-500">Faltante:</small>
+                        <div id="total-500">$0</div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn-edit" id="btn-edit-500" onclick="toggleEdit(500)">Editar Valores / Filas</button>
+                        <button class="btn-save" id="btn-save-500" onclick="saveValues(500)" style="display:none;">Guardar y Ordenar</button>
+                        <button class="btn-clear" onclick="resetProgress(500)">Limpiar Progreso</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- VISTA 1000K -->
+            <!-- VISTA RETO 2 -->
             <div id="view-1000" class="view">
                 <div class="card">
-                    <h3>💰 Reto: $1.000.000</h3>
+                    <h3 id="container-title-1000"><span id="title-1000">💰 Reto 2</span></h3>
+
+                    <div id="controls-1000" class="edit-controls" style="display:none;">
+                        <button class="btn-action" onclick="adjustCells(1000, 1)">+ Añadir Cuadro</button>
+                        <button class="btn-action" onclick="adjustCells(1000, -1)">- Quitar Cuadro</button>
+                    </div>
+
                     <table class="savings-table" id="table-1000"></table>
-                    <div class="savings-footer">Faltante: <span id="total-1000">$1.000.000</span></div>
-                    <button class="btn-clear" onclick="resetChallenge(1000)">Limpiar Reto 1.000k</button>
+                    
+                    <div class="savings-footer">
+                        <small id="footer-label-1000">Faltante:</small>
+                        <div id="total-1000">$0</div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn-edit" id="btn-edit-1000" onclick="toggleEdit(1000)">Editar Valores / Filas</button>
+                        <button class="btn-save" id="btn-save-1000" onclick="saveValues(1000)" style="display:none;">Guardar y Ordenar</button>
+                        <button class="btn-clear" onclick="resetProgress(1000)">Limpiar Progreso</button>
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
 
-<!-- FIREBASE -->
+<!-- FIREBASE SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
 
 <script>
+    // CONFIGURACIÓN FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
         authDomain: "ahorrobancofacturacion.firebaseapp.com",
@@ -154,63 +184,102 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const val500 = [20000,20000,20000,20000,20000,20000,25000,25000,25000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,25000,20000,20000];
-    const val1000 = [25000,25000,25000,35000,35000,35000,45000,45000,45000,25000,25000,25000,35000,35000,35000,45000,45000,45000,25000,25000,25000,35000,35000,30000,45000,45000,45000,20000,20000,20000];
+    const defaults = {
+        500: [20000,20000,20000,20000,20000,20000,25000,25000,25000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,25000,20000,20000],
+        1000: [25000,25000,25000,35000,35000,35000,45000,45000,45000,25000,25000,25000,35000,35000,35000,45000,45000,45000,25000,25000,25000,35000,35000,30000,45000,45000,45000,20000,20000,20000]
+    };
+
+    let editingState = { 500: false, 1000: false };
 
     window.onload = () => {
-        // Cargar desde Firebase
-        db.ref('ahorros').once('value', (snapshot) => {
+        // Cargar desde Firebase al iniciar
+        db.ref('ahorros_v2').once('value', (snapshot) => {
             const cloudData = snapshot.val() || {};
-            if(cloudData.save_500) localStorage.setItem('save_500', JSON.stringify(cloudData.save_500));
-            if(cloudData.save_1000) localStorage.setItem('save_1000', JSON.stringify(cloudData.save_1000));
-            
-            initChallenge(500, val500, 'table-500', 'save_500', 'total-500');
-            initChallenge(1000, val1000, 'table-1000', 'save_1000', 'total-1000');
+            // Sincronizar LocalStorage con Nube
+            Object.keys(cloudData).forEach(key => {
+                localStorage.setItem(key, JSON.stringify(cloudData[key]));
+            });
+            initChallenge(500);
+            initChallenge(1000);
         });
     };
 
-    function formatDisp(num) {
-        return new Intl.NumberFormat('de-DE').format(Math.round(num));
+    function formatNumber(num) {
+        return new Intl.NumberFormat('de-DE').format(num);
     }
 
-    function initChallenge(meta, dataArr, tableId, storageKey, displayId) {
-        const table = document.getElementById(tableId);
-        const saved = JSON.parse(localStorage.getItem(storageKey)) || [];
+    function parseNumber(str) {
+        return parseInt(str.toString().replace(/\./g, '')) || 0;
+    }
+
+    function handleInput(input, meta) {
+        let val = input.value.replace(/\D/g, '');
+        input.value = val === '' ? '' : formatNumber(parseInt(val));
+        updateSumWhileEditing(meta);
+    }
+
+    function getSavedValues(meta) {
+        const saved = localStorage.getItem(`vals_${meta}`);
+        return saved ? JSON.parse(saved) : [...defaults[meta]];
+    }
+
+    function initChallenge(meta) {
+        const table = document.getElementById(`table-${meta}`);
+        const dataArr = getSavedValues(meta);
+        const progress = JSON.parse(localStorage.getItem(`save_${meta}`)) || [];
+        const isEditing = editingState[meta];
         
+        const titleContainer = document.getElementById(`container-title-${meta}`);
+        const currentTitle = localStorage.getItem(`name_${meta}`) || (meta === 500 ? "💰 Reto 1" : "💰 Reto 2");
+        const footerLabel = document.getElementById(`footer-label-${meta}`);
+        
+        if(isEditing) {
+            titleContainer.innerHTML = `<input type="text" id="input-title-${meta}" class="input-title" value="${currentTitle}">`;
+            footerLabel.innerText = "SUMATORIA TOTAL:";
+        } else {
+            titleContainer.innerHTML = `<span id="title-${meta}">${currentTitle}</span>`;
+            footerLabel.innerText = "FALTANTE:";
+        }
+
         table.innerHTML = "";
         let row;
-
         dataArr.forEach((val, idx) => {
             if (idx % 3 === 0) row = table.insertRow();
             const cell = row.insertCell();
-            const isChecked = saved.includes(idx);
             
-            if(isChecked) cell.classList.add('cell-selected');
-            
-            cell.innerHTML = `
-                <input type="checkbox" id="${tableId}-ch-${idx}" ${isChecked ? 'checked' : ''}>
-                <span>$${formatDisp(val)}</span>
-            `;
-
-            cell.onclick = (e) => {
-                if (e.target.tagName !== 'INPUT') {
-                    const cb = cell.querySelector('input');
-                    cb.checked = !cb.checked;
-                    toggleCell(idx, val, tableId, storageKey, meta, displayId, cell, cb);
-                }
-            };
-
-            cell.querySelector('input').onchange = (e) => {
-                toggleCell(idx, val, tableId, storageKey, meta, displayId, cell, e.target);
-            };
+            if(isEditing) {
+                cell.innerHTML = `<input type="text" class="input-edit" value="${formatNumber(val)}" oninput="handleInput(this, ${meta})" data-idx="${idx}">`;
+                cell.onclick = null;
+            } else {
+                const isChecked = progress.includes(idx);
+                if(isChecked) cell.classList.add('cell-selected');
+                cell.innerHTML = `<input type="checkbox" id="ch-${meta}-${idx}" ${isChecked ? 'checked' : ''}> <span>$${formatNumber(val)}</span>`;
+                cell.onclick = (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        const cb = cell.querySelector('input');
+                        cb.checked = !cb.checked;
+                        toggleCell(idx, meta, cell, cb);
+                    }
+                };
+                cell.querySelector('input').onchange = (e) => toggleCell(idx, meta, cell, e.target);
+            }
         });
 
-        updateTotal(meta, dataArr, storageKey, displayId);
+        if(isEditing) updateSumWhileEditing(meta);
+        else updateTotal(meta);
     }
 
-    function toggleCell(idx, val, tableId, storageKey, meta, displayId, cell, checkbox) {
-        let saved = JSON.parse(localStorage.getItem(storageKey)) || [];
+    function updateSumWhileEditing(meta) {
+        const table = document.getElementById(`table-${meta}`);
+        const inputs = table.querySelectorAll('.input-edit');
+        let suma = 0;
+        inputs.forEach(i => suma += parseNumber(i.value));
+        document.getElementById(`total-${meta}`).innerText = `$${formatNumber(suma)}`;
+        document.getElementById(`total-${meta}`).style.color = "var(--primary)";
+    }
 
+    function toggleCell(idx, meta, cell, checkbox) {
+        let saved = JSON.parse(localStorage.getItem(`save_${meta}`)) || [];
         if (checkbox.checked) {
             cell.classList.add('cell-selected');
             if (!saved.includes(idx)) saved.push(idx);
@@ -218,37 +287,78 @@
             cell.classList.remove('cell-selected');
             saved = saved.filter(i => i !== idx);
         }
-
-        localStorage.setItem(storageKey, JSON.stringify(saved));
-        // Sincronizar con Firebase
-        db.ref('ahorros/' + storageKey).set(saved);
-        
-        updateTotal(meta, (meta === 500 ? val500 : val1000), storageKey, displayId);
+        localStorage.setItem(`save_${meta}`, JSON.stringify(saved));
+        // Sincronizar progreso con Firebase
+        db.ref(`ahorros_v2/save_${meta}`).set(saved);
+        updateTotal(meta);
     }
 
-    function updateTotal(meta, dataArr, storageKey, displayId) {
-        const saved = JSON.parse(localStorage.getItem(storageKey)) || [];
-        let sumaTotal = 0;
-        saved.forEach(idx => sumaTotal += dataArr[idx]);
+    function updateTotal(meta) {
+        const dataArr = getSavedValues(meta);
+        const savedIndices = JSON.parse(localStorage.getItem(`save_${meta}`)) || [];
+        const totalMeta = dataArr.reduce((a, b) => a + b, 0);
+        let sumaAhorrada = 0;
+        savedIndices.forEach(idx => { if(dataArr[idx] !== undefined) sumaAhorrada += dataArr[idx]; });
+        const faltante = totalMeta - sumaAhorrada;
+        const display = document.getElementById(`total-${meta}`);
         
-        const faltante = (meta * 1000) - sumaTotal;
-        document.getElementById(displayId).innerText = `$${formatDisp(faltante)}`;
-        
-        if(faltante <= 0) {
-            document.getElementById(displayId).style.color = "#34a853";
-            document.getElementById(displayId).innerText = "¡RETO COMPLETADO!";
+        if(faltante <= 0 && totalMeta > 0) {
+            display.innerText = "¡RETO COMPLETADO!";
+            display.style.color = "var(--secondary)";
         } else {
-            document.getElementById(displayId).style.color = "var(--secondary)";
+            display.innerText = `$${formatNumber(faltante)}`;
+            display.style.color = "var(--secondary)";
         }
     }
 
-    function resetChallenge(meta) {
-        if(confirm(`¿Estás seguro de reiniciar el progreso del reto de ${meta}k?`)) {
-            const key = meta === 500 ? 'save_500' : 'save_1000';
-            localStorage.removeItem(key);
-            db.ref('ahorros/' + key).remove();
-            if(meta === 500) initChallenge(500, val500, 'table-500', 'save_500', 'total-500');
-            else initChallenge(1000, val1000, 'table-1000', 'save_1000', 'total-1000');
+    function toggleEdit(meta) {
+        editingState[meta] = true;
+        document.getElementById(`btn-edit-${meta}`).style.display = 'none';
+        document.getElementById(`btn-save-${meta}`).style.display = 'inline-block';
+        document.getElementById(`controls-${meta}`).style.display = 'flex';
+        initChallenge(meta);
+    }
+
+    function adjustCells(meta, change) {
+        const table = document.getElementById(`table-${meta}`);
+        const inputs = table.querySelectorAll('.input-edit');
+        let currentVals = Array.from(inputs).map(i => parseNumber(i.value));
+        if(change === 1) currentVals.push(0);
+        else if(change === -1 && currentVals.length > 0) currentVals.pop();
+        localStorage.setItem(`vals_${meta}`, JSON.stringify(currentVals));
+        initChallenge(meta);
+    }
+
+    function saveValues(meta) {
+        // 1. Nombre
+        const titleInput = document.getElementById(`input-title-${meta}`);
+        if(titleInput) {
+            localStorage.setItem(`name_${meta}`, titleInput.value);
+            db.ref(`ahorros_v2/name_${meta}`).set(titleInput.value);
+        }
+
+        // 2. Valores y ordenamiento
+        const table = document.getElementById(`table-${meta}`);
+        const inputs = table.querySelectorAll('.input-edit');
+        const finalValues = Array.from(inputs).map(i => parseNumber(i.value));
+        finalValues.sort((a, b) => a - b);
+        
+        localStorage.setItem(`vals_${meta}`, JSON.stringify(finalValues));
+        db.ref(`ahorros_v2/vals_${meta}`).set(finalValues);
+        
+        editingState[meta] = false;
+        document.getElementById(`btn-edit-${meta}`).style.display = 'inline-block';
+        document.getElementById(`btn-save-${meta}`).style.display = 'none';
+        document.getElementById(`controls-${meta}`).style.display = 'none';
+        
+        initChallenge(meta);
+    }
+
+    function resetProgress(meta) {
+        if(confirm("¿Deseas reiniciar el progreso? Tus valores, nombre y orden se mantendrán en la nube.")) {
+            localStorage.removeItem(`save_${meta}`);
+            db.ref(`ahorros_v2/save_${meta}`).remove();
+            initChallenge(meta);
         }
     }
 </script>
