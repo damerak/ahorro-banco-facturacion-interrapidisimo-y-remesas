@@ -180,7 +180,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
 
 <script>
-    // Configuración de Firebase (Original restaurada)
+    // Configuración de Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
         authDomain: "ahorrobancofacturacion.firebaseapp.com",
@@ -235,7 +235,6 @@
         tablaCorr.innerHTML = '';
         const fecha = inputFecha.value;
 
-        // Sincronizar desde Firebase
         db.ref('banco/' + fecha).once('value', (snapshot) => {
             const cloudData = snapshot.val();
             if(cloudData) {
@@ -257,7 +256,9 @@
                 document.getElementById('comp-2').value = "0";
             }
 
-            if (tablaCorr.querySelectorAll('tr').length === 0) crearFilaCorr();
+            // MODIFICACIÓN: Siempre crear una fila vacía al final después de cargar los datos
+            crearFilaCorr(); 
+            
             calcularCorr();
         });
     }
@@ -372,7 +373,6 @@
             filas: filas
         };
         localStorage.setItem('corresponsalData_' + fecha, JSON.stringify(data));
-        // Sincronizar con Firebase
         db.ref('banco/' + fecha).set(data);
     }
 
