@@ -1,4 +1,3 @@
-<!-- ... (CSS y HTML se mantiene igual) ... -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -24,7 +23,6 @@
             justify-content: center;
         }
 
-        /* CONTENEDOR PRINCIPAL */
         .corr-container {
             width: 100%;
             max-width: 800px;
@@ -40,7 +38,6 @@
             background: white;
         }
 
-        /* GRID DE CABECERA */
         .header-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -71,7 +68,6 @@
             outline: none;
         }
 
-        /* TABLA DE MOVIMIENTOS */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -129,17 +125,12 @@
             text-transform: uppercase;
             font-size: 10px;
         }
-
-        .btn-borrar-corr:hover {
-            background: #333;
-        }
     </style>
 </head>
 <body>
 
 <div class="corr-container">
     <div class="sticky-top">
-        <!-- Panel Superior de Resumen -->
         <div class="header-grid">
             <div class="cell bg-green">Saldo Inicio</div>
             <div class="cell bg-yellow text-red">$ <input type="text" id="saldo-inicio" value="0" oninput="formatAndCalc(this)"></div>
@@ -155,18 +146,19 @@
 
             <div class="cell bg-green text-red" style="font-size: 11px;">Cupo Disponible</div>
             <div class="cell bg-yellow text-red">$ <input type="text" id="cupo" value="0" readonly></div>
-            <div class="cell bg-cyan"></div>
+            <!-- Compensación 1 -->
+            <div class="cell bg-yellow text-red">$ <input type="text" id="comp-1" value="0" oninput="formatAndCalc(this)"></div>
             <div class="cell bg-yellow">Retiro</div>
             <div class="cell bg-yellow text-red">$ <span id="resumen-retiro">0</span></div>
 
             <div class="cell bg-green">Saldo Efectivo</div>
             <div class="cell bg-yellow text-red">$ <span id="resumen-efectivo">0</span></div>
-            <div class="cell bg-cyan"></div>
+            <!-- Compensación 2 -->
+            <div class="cell bg-yellow text-red">$ <input type="text" id="comp-2" value="0" oninput="formatAndCalc(this)"></div>
             <div class="cell bg-yellow">Fecha</div>
             <div class="cell bg-yellow"><input type="date" id="corr-fecha" onchange="handleDateChange()"></div>
         </div>
 
-        <!-- Encabezados de Tabla -->
         <table>
             <thead>
                 <tr>
@@ -178,19 +170,17 @@
         </table>
     </div>
 
-    <!-- Cuerpo de la Tabla -->
     <table>
-        <tbody id="filas-corresponsal">
-            <!-- Dinámico -->
-        </tbody>
+        <tbody id="filas-corresponsal"></tbody>
     </table>
 </div>
 
-<!-- FIREBASE -->
+<!-- FIREBASE SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
 
 <script>
+    // Configuración de Firebase (Original restaurada)
     const firebaseConfig = {
         apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
         authDomain: "ahorrobancofacturacion.firebaseapp.com",
@@ -226,6 +216,8 @@
             if (data) {
                 let parsed = JSON.parse(data);
                 let saldoCierre = parseMoney(parsed.saldoInicio);
+                let c1 = parseMoney(parsed.comp1);
+                let c2 = parseMoney(parsed.comp2);
                 if (parsed.filas) {
                     parsed.filas.forEach(f => {
                         let v = parseMoney(f.valor);
@@ -233,7 +225,7 @@
                         if (f.tipo === "Deposito") saldoCierre += v;
                     });
                 }
-                return saldoCierre;
+                return saldoCierre - (c1 + c2);
             }
         }
         return 0;
@@ -242,8 +234,8 @@
     function initCorresponsal() {
         tablaCorr.innerHTML = '';
         const fecha = inputFecha.value;
-        
-        // Sincronizar desde Firebase antes de mostrar
+
+        // Sincronizar desde Firebase
         db.ref('banco/' + fecha).once('value', (snapshot) => {
             const cloudData = snapshot.val();
             if(cloudData) {
@@ -253,17 +245,19 @@
             const savedData = JSON.parse(localStorage.getItem('corresponsalData_' + fecha));
             if (savedData) {
                 document.getElementById('saldo-inicio').value = savedData.saldoInicio || "0";
+                document.getElementById('comp-1').value = savedData.comp1 || "0";
+                document.getElementById('comp-2').value = savedData.comp2 || "0";
                 if (savedData.filas && savedData.filas.length > 0) {
                     savedData.filas.forEach(f => { crearFilaCorr(f.tipo, f.valor); });
                 }
             } else {
                 const saldoArrastrado = buscarUltimoSaldoFinal(fecha);
                 document.getElementById('saldo-inicio').value = saldoArrastrado.toLocaleString('es-CO');
+                document.getElementById('comp-1').value = "0";
+                document.getElementById('comp-2').value = "0";
             }
 
-            if (tablaCorr.querySelectorAll('tr').length === 0) {
-                crearFilaCorr();
-            }
+            if (tablaCorr.querySelectorAll('tr').length === 0) crearFilaCorr();
             calcularCorr();
         });
     }
@@ -293,25 +287,14 @@
         if (!filaActual.nextElementSibling) {
             const tipo = filaActual.querySelector('.select-exp').value;
             const valor = filaActual.querySelector('.input-valor').value;
-            if (tipo !== "" || valor !== "") {
-                crearFilaCorr();
-            }
+            if (tipo !== "" || valor !== "") crearFilaCorr();
         }
         calcularCorr();
     }
 
     function formatAndCalc(input) {
-        let val = input.value;
-        let isNegative = val.trim().startsWith('-');
-        let digits = val.replace(/\D/g, "");
-        if (digits === "" && isNegative) {
-            input.value = "-";
-        } else if (digits === "") {
-            input.value = "0";
-        } else {
-            let num = parseInt(digits) * (isNegative ? -1 : 1);
-            input.value = num.toLocaleString('es-CO');
-        }
+        let val = input.value.replace(/\D/g, "");
+        input.value = val === "" ? "0" : Number(val).toLocaleString('es-CO');
         calcularCorr();
     }
 
@@ -322,12 +305,18 @@
 
     function calcularCorr() {
         const saldoInicioBase = parseMoney(document.getElementById('saldo-inicio').value);
+        const comp1 = parseMoney(document.getElementById('comp-1').value);
+        const comp2 = parseMoney(document.getElementById('comp-2').value);
+        const totalCompensacion = comp1 + comp2;
+
         let currentSaldoAcumulado = saldoInicioBase;
         let sumaRetiros = 0;
         let sumaDepositos = 0;
         let contadorTrans = 0;
 
-        tablaCorr.querySelectorAll('tr').forEach(fila => {
+        const filas = Array.from(tablaCorr.querySelectorAll('tr'));
+        
+        filas.forEach((fila, index) => {
             const tipo = fila.querySelector('.select-exp').value;
             const valorInput = fila.querySelector('.input-valor').value;
             const valorNum = parseMoney(valorInput);
@@ -343,22 +332,29 @@
                     sumaDepositos += valorNum;
                 }
             }
-            displaySaldoFila.innerText = currentSaldoAcumulado.toLocaleString('es-CO');
+
+            let saldoFila = currentSaldoAcumulado;
+            if (index === filas.length - 1) {
+                saldoFila = currentSaldoAcumulado - totalCompensacion;
+            }
+            displaySaldoFila.innerText = saldoFila.toLocaleString('es-CO');
         });
 
+        const saldoEfectivoFinal = currentSaldoAcumulado - totalCompensacion;
+
         document.getElementById('resumen-saldo').innerText = saldoInicioBase.toLocaleString('es-CO');
-        document.getElementById('resumen-efectivo').innerText = currentSaldoAcumulado.toLocaleString('es-CO');
+        document.getElementById('resumen-efectivo').innerText = saldoEfectivoFinal.toLocaleString('es-CO');
         document.getElementById('resumen-retiro').innerText = sumaRetiros.toLocaleString('es-CO');
         document.getElementById('resumen-deposito').innerText = sumaDepositos.toLocaleString('es-CO');
         document.getElementById('total-trans').innerText = contadorTrans;
         
-        const cupoCalc = CUPO_BASE - currentSaldoAcumulado;
+        const cupoCalc = CUPO_BASE - saldoEfectivoFinal;
         document.getElementById('cupo').value = cupoCalc.toLocaleString('es-CO');
 
-        saveToLocal();
+        saveData();
     }
 
-    function saveToLocal() {
+    function saveData() {
         const fecha = inputFecha.value;
         if (!fecha) return;
         const filas = [];
@@ -371,6 +367,8 @@
         });
         const data = {
             saldoInicio: document.getElementById('saldo-inicio').value,
+            comp1: document.getElementById('comp-1').value,
+            comp2: document.getElementById('comp-2').value,
             filas: filas
         };
         localStorage.setItem('corresponsalData_' + fecha, JSON.stringify(data));
