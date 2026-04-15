@@ -24,6 +24,8 @@
 
         .challenges-grid {
             display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;
+            /* AJUSTE 1: Evita que las columnas se estiren a la misma altura */
+            align-items: flex-start; 
         }
 
         .view { flex: 1; min-width: 340px; }
@@ -31,7 +33,10 @@
         .card {
             background: white; padding: 20px; border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center; height: 100%; box-sizing: border-box;
+            text-align: center; 
+            /* AJUSTE 2: Cambiado de 100% a auto para que se encoja al contenido */
+            height: auto; 
+            box-sizing: border-box;
             display: flex; flex-direction: column;
         }
 
@@ -80,7 +85,9 @@
         }
 
         .savings-footer {
-            margin-top: auto; font-size: 1.4rem; font-weight: bold;
+            /* AJUSTE 3: Cambiado margin-top: auto a un margen fijo para evitar el hueco */
+            margin-top: 20px; 
+            font-size: 1.4rem; font-weight: bold;
             padding: 15px; border-top: 2px solid #eee; color: var(--secondary);
         }
 
@@ -166,12 +173,10 @@
         </div>
     </div>
 
-<!-- FIREBASE SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
 
 <script>
-    // CONFIGURACIÓN FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
         authDomain: "ahorrobancofacturacion.firebaseapp.com",
@@ -192,10 +197,8 @@
     let editingState = { 500: false, 1000: false };
 
     window.onload = () => {
-        // Cargar desde Firebase al iniciar
         db.ref('ahorros_v2').once('value', (snapshot) => {
             const cloudData = snapshot.val() || {};
-            // Sincronizar LocalStorage con Nube
             Object.keys(cloudData).forEach(key => {
                 localStorage.setItem(key, JSON.stringify(cloudData[key]));
             });
@@ -288,7 +291,6 @@
             saved = saved.filter(i => i !== idx);
         }
         localStorage.setItem(`save_${meta}`, JSON.stringify(saved));
-        // Sincronizar progreso con Firebase
         db.ref(`ahorros_v2/save_${meta}`).set(saved);
         updateTotal(meta);
     }
@@ -330,27 +332,21 @@
     }
 
     function saveValues(meta) {
-        // 1. Nombre
         const titleInput = document.getElementById(`input-title-${meta}`);
         if(titleInput) {
             localStorage.setItem(`name_${meta}`, titleInput.value);
             db.ref(`ahorros_v2/name_${meta}`).set(titleInput.value);
         }
-
-        // 2. Valores y ordenamiento
         const table = document.getElementById(`table-${meta}`);
         const inputs = table.querySelectorAll('.input-edit');
         const finalValues = Array.from(inputs).map(i => parseNumber(i.value));
         finalValues.sort((a, b) => a - b);
-        
         localStorage.setItem(`vals_${meta}`, JSON.stringify(finalValues));
         db.ref(`ahorros_v2/vals_${meta}`).set(finalValues);
-        
         editingState[meta] = false;
         document.getElementById(`btn-edit-${meta}`).style.display = 'inline-block';
         document.getElementById(`btn-save-${meta}`).style.display = 'none';
         document.getElementById(`controls-${meta}`).style.display = 'none';
-        
         initChallenge(meta);
     }
 
