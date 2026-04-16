@@ -1,3 +1,5 @@
+--- START OF FILE index.html ---
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -23,7 +25,7 @@
             overflow: hidden;
         }
 
-        /* BARRA DE NAVEGACIÓN (Ahora al inicio) */
+        /* BARRA DE NAVEGACIÓN */
         nav {
             background-color: var(--white);
             display: flex;
@@ -92,15 +94,15 @@
 
 <nav id="main-nav">
     <button class="nav-btn" onclick="loadPage('facturacion.html', this)">📄 Facturación</button>
-    <!-- Botón de Banco marcado como Activo por defecto -->
     <button class="nav-btn active" onclick="loadPage('banco.html', this)">🏦 Banco</button>
     <button class="nav-btn" onclick="loadPage('remesas.html', this)">💸 Remesas</button>
     <button class="nav-btn" onclick="loadPage('interrapidisimo.html', this)">🚚 Interrapidísimo</button>
     <button class="nav-btn" onclick="loadPage('ahorro.html', this)">💰 Ahorro</button>
+    <!-- Nuevo botón "Otros" -->
+    <button class="nav-btn" onclick="loadPage('https://damerak.github.io/gastos-prestamos-cuentas-y-nequi/', this)">🌐 Otros</button>
 </nav>
 
 <div id="main-container">
-    <!-- El iframe inicia cargando banco.html -->
     <iframe id="content-frame" src="banco.html"></iframe>
 </div>
 
@@ -118,7 +120,7 @@
 
     // Manejo de errores de carga
     document.getElementById('content-frame').onerror = function() {
-        alert("Error al cargar el módulo. Asegúrate de que el archivo .html existe en la misma carpeta.");
+        alert("Error al cargar el módulo. Verifica la conexión o el archivo.");
     };
 </script>
 
