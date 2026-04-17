@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Bancario - Irusaga</title>
+    <!-- Estilos de Flatpickr para el calendario -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         :root {
             --primary: #1a73e8;
@@ -12,6 +14,7 @@
             --cyan-excel: #00FFFF;
             --gray-row: #D9D9D9;
             --red-text: #FF0000;
+            --dark-blue: #00008B;
         }
 
         body {
@@ -20,7 +23,8 @@
             margin: 0;
             padding: 20px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
         }
 
         .corr-container {
@@ -30,6 +34,24 @@
             border: 2px solid black;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
+
+        /* Estilos Nueva Sección Mensual */
+        .monthly-summary {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            background-color: #f0f0f0;
+            border-bottom: 2px solid black;
+        }
+        
+        .monthly-cell {
+            border: 1px solid black;
+            padding: 5px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .monthly-header { background-color: var(--dark-blue); color: white; }
+        .monthly-value { background-color: white; color: var(--red-text); height: 25px; display: flex; align-items: center; justify-content: center;}
 
         .sticky-top {
             position: sticky;
@@ -125,11 +147,42 @@
             text-transform: uppercase;
             font-size: 10px;
         }
+
+        /* ESTILO PARA EL PUNTITO VERDE EN EL CALENDARIO */
+        .has-data-dot {
+            position: relative;
+        }
+        .has-data-dot::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            background-color: var(--green-excel);
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
 
 <div class="corr-container">
+    <!-- SECCIÓN: RESUMEN MENSUAL -->
+    <div class="monthly-summary">
+        <div class="monthly-cell monthly-header">ENTRADA (Mes)</div>
+        <div class="monthly-cell monthly-header">SALIDA (Mes)</div>
+        <div class="monthly-cell monthly-header">TRX DEPOSITO</div>
+        <div class="monthly-cell monthly-header">TRX RETIRO</div>
+        <div class="monthly-cell monthly-header">TOTAL COMISIÓN</div>
+        
+        <div class="monthly-cell monthly-value" id="m-entrada">$ 0</div>
+        <div class="monthly-cell monthly-value" id="m-salida">$ 0</div>
+        <div class="monthly-cell monthly-value" id="m-trx-dep">0</div>
+        <div class="monthly-cell monthly-value" id="m-trx-ret">0</div>
+        <div class="monthly-cell monthly-value" id="m-total-comision">$ 0</div>
+    </div>
+
     <div class="sticky-top">
         <div class="header-grid">
             <div class="cell bg-green">Saldo Inicio</div>
@@ -156,7 +209,7 @@
             <!-- Compensación 2 -->
             <div class="cell bg-yellow text-red">$ <input type="text" id="comp-2" value="0" oninput="formatAndCalc(this)"></div>
             <div class="cell bg-yellow">Fecha</div>
-            <div class="cell bg-yellow"><input type="date" id="corr-fecha" onchange="handleDateChange()"></div>
+            <div class="cell bg-yellow"><input type="text" id="corr-fecha" placeholder="Seleccione fecha" readonly></div>
         </div>
 
         <table>
@@ -178,9 +231,11 @@
 <!-- FIREBASE SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
+<!-- Scripts de Flatpickr -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
 <script>
-    // Configuración de Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyAbGwL0wsMBsHfaNUoPlceWWtp0tKgt2m8",
         authDomain: "ahorrobancofacturacion.firebaseapp.com",
@@ -196,12 +251,60 @@
     const tablaCorr = document.getElementById('filas-corresponsal');
     const inputFecha = document.getElementById('corr-fecha');
     const CUPO_BASE = 5000000;
+    
+    let fp; // Instancia de Flatpickr
+    let fechasConDatos = []; // Array para guardar qué fechas tienen datos en Firebase
 
     window.onload = function() {
-        const today = new Date().toISOString().split('T')[0];
-        inputFecha.value = today;
-        initCorresponsal();
+        cargarFechasConDatos();
     };
+
+    // Función para obtener todas las fechas que tienen registros
+    function cargarFechasConDatos() {
+        db.ref('banco').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                fechasConDatos = Object.keys(data);
+            } else {
+                fechasConDatos = [];
+            }
+            initCalendar(); // Iniciar o refrescar calendario
+        });
+    }
+
+    function initCalendar() {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Si ya existe la instancia, solo la refrescamos, si no, la creamos
+        if (fp) {
+            fp.redraw();
+            return;
+        }
+
+        fp = flatpickr("#corr-fecha", {
+            locale: "es",
+            defaultValue: today,
+            defaultDate: today,
+            dateFormat: "Y-m-d",
+            onDayCreate: function(dObj, dStr, fp, dayElem) {
+                // Convertir la fecha del elemento del calendario a formato YYYY-MM-DD
+                const date = dayElem.dateObj;
+                const dateStr = date.getFullYear() + "-" + 
+                                String(date.getMonth() + 1).padStart(2, '0') + "-" + 
+                                String(date.getDate()).padStart(2, '0');
+                
+                // Si la fecha está en nuestra lista de Firebase, añadir clase del puntito
+                if (fechasConDatos.includes(dateStr)) {
+                    dayElem.classList.add("has-data-dot");
+                }
+            },
+            onChange: function(selectedDates, dateStr) {
+                handleDateChange();
+            }
+        });
+        
+        initCorresponsal();
+    }
 
     function handleDateChange() {
         initCorresponsal();
@@ -234,6 +337,7 @@
     function initCorresponsal() {
         tablaCorr.innerHTML = '';
         const fecha = inputFecha.value;
+        if(!fecha) return;
 
         db.ref('banco/' + fecha).once('value', (snapshot) => {
             const cloudData = snapshot.val();
@@ -256,10 +360,9 @@
                 document.getElementById('comp-2').value = "0";
             }
 
-            // MODIFICACIÓN: Siempre crear una fila vacía al final después de cargar los datos
             crearFilaCorr(); 
-            
             calcularCorr();
+            calcularResumenMensual();
         });
     }
 
@@ -355,6 +458,57 @@
         saveData();
     }
 
+    function calcularResumenMensual() {
+        const fechaActual = inputFecha.value; 
+        if(!fechaActual) return;
+        const mesActual = fechaActual.substring(0, 7);
+
+        db.ref('banco').once('value', (snapshot) => {
+            const todosLosDias = snapshot.val();
+            
+            let entradaMes = 0;
+            let salidaMes = 0;
+            let trxDepMes = 0;
+            let trxRetMes = 0;
+            let comisionTotalMes = 0;
+
+            if (todosLosDias) {
+                for (let fechaKey in todosLosDias) {
+                    if (fechaKey.startsWith(mesActual)) {
+                        const diaData = todosLosDias[fechaKey];
+                        if (diaData.filas) {
+                            diaData.filas.forEach(f => {
+                                const valor = parseMoney(f.valor);
+                                const tipo = f.tipo;
+
+                                if (tipo === "Deposito") {
+                                    trxDepMes++;
+                                    if (valor >= 80000 && valor <= 800000) entradaMes += valor;
+                                    if (valor <= 80000) comisionTotalMes += 160;
+                                    else if (valor > 80000 && valor <= 800000) comisionTotalMes += (valor * 0.0020);
+                                    else if (valor > 800000) comisionTotalMes += 1600;
+                                } 
+                                else if (tipo === "Retiro") {
+                                    trxRetMes++;
+                                    if (valor >= 80000 && valor <= 800000) salidaMes += valor;
+                                    if (valor <= 80000) comisionTotalMes += 80;
+                                    else if (valor > 80000 && valor <= 800000) comisionTotalMes += (valor * 0.0010);
+                                    else if (valor > 800000) comisionTotalMes += 800;
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('m-entrada').innerText = "$ " + entradaMes.toLocaleString('es-CO');
+            document.getElementById('m-salida').innerText = "$ " + salidaMes.toLocaleString('es-CO');
+            document.getElementById('m-trx-dep').innerText = trxDepMes;
+            document.getElementById('m-trx-ret').innerText = trxRetMes;
+            document.getElementById('m-total-comision').innerText = "$ " + Math.round(comisionTotalMes).toLocaleString('es-CO');
+        });
+    }
+
     function saveData() {
         const fecha = inputFecha.value;
         if (!fecha) return;
@@ -366,6 +520,10 @@
                 filas.push({ tipo, valor });
             }
         });
+
+        // Solo guardamos si hay datos reales
+        if (filas.length === 0 && parseMoney(document.getElementById('saldo-inicio').value) === 0) return;
+
         const data = {
             saldoInicio: document.getElementById('saldo-inicio').value,
             comp1: document.getElementById('comp-1').value,
@@ -373,15 +531,18 @@
             filas: filas
         };
         localStorage.setItem('corresponsalData_' + fecha, JSON.stringify(data));
-        db.ref('banco/' + fecha).set(data);
+        db.ref('banco/' + fecha).set(data).then(() => {
+            calcularResumenMensual();
+        });
     }
 
     function resetCorresponsal() {
         const fecha = inputFecha.value;
         if(confirm(`¿Estás seguro de que deseas borrar los datos del día ${fecha}?`)) {
             localStorage.removeItem('corresponsalData_' + fecha);
-            db.ref('banco/' + fecha).remove();
-            initCorresponsal();
+            db.ref('banco/' + fecha).remove().then(() => {
+                initCorresponsal();
+            });
         }
     }
 </script>
