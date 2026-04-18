@@ -1,3 +1,5 @@
+--- START OF FILE banco.html ---
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -259,7 +261,6 @@
         cargarFechasConDatos();
     };
 
-    // Función para obtener todas las fechas que tienen registros
     function cargarFechasConDatos() {
         db.ref('banco').on('value', (snapshot) => {
             const data = snapshot.val();
@@ -268,14 +269,13 @@
             } else {
                 fechasConDatos = [];
             }
-            initCalendar(); // Iniciar o refrescar calendario
+            initCalendar();
         });
     }
 
     function initCalendar() {
         const today = new Date().toISOString().split('T')[0];
         
-        // Si ya existe la instancia, solo la refrescamos, si no, la creamos
         if (fp) {
             fp.redraw();
             return;
@@ -287,13 +287,11 @@
             defaultDate: today,
             dateFormat: "Y-m-d",
             onDayCreate: function(dObj, dStr, fp, dayElem) {
-                // Convertir la fecha del elemento del calendario a formato YYYY-MM-DD
                 const date = dayElem.dateObj;
                 const dateStr = date.getFullYear() + "-" + 
                                 String(date.getMonth() + 1).padStart(2, '0') + "-" + 
                                 String(date.getDate()).padStart(2, '0');
                 
-                // Si la fecha está en nuestra lista de Firebase, añadir clase del puntito
                 if (fechasConDatos.includes(dateStr)) {
                     dayElem.classList.add("has-data-dot");
                 }
@@ -355,6 +353,7 @@
                 }
             } else {
                 const saldoArrastrado = buscarUltimoSaldoFinal(fecha);
+                // Usar toLocaleString para mantener el formato visual al cargar arrastrado
                 document.getElementById('saldo-inicio').value = saldoArrastrado.toLocaleString('es-CO');
                 document.getElementById('comp-1').value = "0";
                 document.getElementById('comp-2').value = "0";
@@ -396,15 +395,27 @@
         calcularCorr();
     }
 
+    // MODIFICADO: Permite el signo negativo al inicio
     function formatAndCalc(input) {
-        let val = input.value.replace(/\D/g, "");
-        input.value = val === "" ? "0" : Number(val).toLocaleString('es-CO');
+        let val = input.value;
+        let isNegative = val.startsWith('-');
+        let cleanValue = val.replace(/\D/g, ""); 
+        
+        if (cleanValue === "") {
+            input.value = isNegative ? "-" : "0";
+        } else {
+            let num = Number(cleanValue);
+            input.value = (isNegative ? "-" : "") + num.toLocaleString('es-CO');
+        }
         calcularCorr();
     }
 
+    // MODIFICADO: Procesa correctamente el signo negativo
     function parseMoney(str) {
-        if (!str || str === "-") return 0;
-        return parseFloat(str.toString().replace(/\./g, '').replace(/,/g, '')) || 0;
+        if (!str || str === "-" || str === "") return 0;
+        // Quitamos los puntos de miles pero mantenemos el signo menos
+        let cleanStr = str.toString().replace(/\./g, '').replace(/,/g, '');
+        return parseFloat(cleanStr) || 0;
     }
 
     function calcularCorr() {
@@ -521,11 +532,11 @@
             }
         });
 
-        // Solo guardamos si hay datos reales
-        if (filas.length === 0 && parseMoney(document.getElementById('saldo-inicio').value) === 0) return;
+        const sIni = document.getElementById('saldo-inicio').value;
+        if (filas.length === 0 && parseMoney(sIni) === 0 && sIni !== "-") return;
 
         const data = {
-            saldoInicio: document.getElementById('saldo-inicio').value,
+            saldoInicio: sIni,
             comp1: document.getElementById('comp-1').value,
             comp2: document.getElementById('comp-2').value,
             filas: filas
