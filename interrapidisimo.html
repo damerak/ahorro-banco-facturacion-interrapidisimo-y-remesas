@@ -1,4 +1,3 @@
-<!-- ... (CSS y HTML igual) ... -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -26,16 +25,8 @@
             height: 100vh;
         }
 
-        /* --- CONTENIDO --- */
         .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-
-        header { 
-            background: var(--primary); color: white; padding: 15px 25px; 
-            font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 1.1rem;
-            text-align: center;
-        }
-        
-        .container { padding: 25px; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .container { padding: 20px; max-width: 1300px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 
         .btn {
             width: 100%; padding: 12px; border: none; border-radius: 8px;
@@ -43,63 +34,81 @@
         }
         .btn-clear { background: var(--danger); }
 
-        /* --- ESTILOS INTERRAPIDISIMO --- */
-        #view-inter * { font-family: Arial, Helvetica, sans-serif !important; font-weight: bold !important; font-size: 15px !important; box-sizing: border-box; }
+        /* --- ESTILOS TABLA --- */
+        #view-inter * { font-family: Arial, Helvetica, sans-serif !important; font-weight: bold !important; font-size: 13px !important; box-sizing: border-box; }
+        
         #view-inter .header-controls-inter {
-            background: white; padding: 15px 30px; border-radius: 10px;
+            background: white; padding: 15px; border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; gap: 25px;
             align-items: center; margin-bottom: 20px; width: 100%;
             justify-content: center;
         }
+
         #view-inter .table-container-inter {
-            display: flex; gap: 25px; flex-wrap: wrap; justify-content: center;
-            background: white; padding: 15px; border: 1px solid #888; border-radius: 4px;
+            display: flex; gap: 15px; justify-content: center; align-items: flex-start;
+            flex-wrap: nowrap;
         }
-        #view-inter table { border-collapse: collapse; width: 100%; }
-        #view-inter th, #view-inter td { border: 1px solid #000; padding: 0; text-align: center; height: 40px; }
-        #view-inter thead th { background-color: #e9ecef; text-transform: uppercase; padding: 8px; }
-        #view-inter .date-col { background-color: #FFC107; width: 95px; padding: 8px; }
+
+        #view-inter table { 
+            border-collapse: collapse; 
+            background: white; 
+            border: 1px solid #000;
+            flex: 1;
+        }
+
+        #view-inter th, #view-inter td { border: 1px solid #000; padding: 0; text-align: center; height: 35px; vertical-align: middle; }
+        #view-inter thead th { background-color: #e9ecef; text-transform: uppercase; padding: 5px; font-size: 11px !important; }
         
-        /* Ajuste para que toda la celda sea clicable */
-        #view-inter .currency-col { text-align: left; position: relative; cursor: text; }
-        #view-inter .currency-prefix { padding-left: 12px; }
+        #view-inter .date-col { background-color: #FFC107; width: 70px; }
+        
+        /* AJUSTE COLUMNA VALOR */
+        #view-inter .currency-col { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            background: white;
+            height: 35px;
+            padding: 0 5px;
+        }
+        #view-inter .currency-prefix { margin-right: 2px; }
         #view-inter .currency-input { 
-            width: calc(100% - 25px); border: none; text-align: right; outline: none; 
-            background: transparent; height: 100%; padding-right: 12px;
+            flex: 1;
+            border: none; 
+            text-align: right; 
+            outline: none; 
+            background: transparent; 
+            height: 100%;
+            width: 100%;
+            padding: 0;
         }
         
+        .col-cant { width: 45px; }
+        .col-total { width: 50px; background-color: #f0f0f0; }
+
         #view-inter .small-input { 
             width: 100%; height: 100%; border: none; text-align: center; 
             outline: none; background: transparent; 
         }
 
-        /* Quitar flechas de los inputs de número */
         #view-inter input::-webkit-outer-spin-button,
         #view-inter input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        #view-inter input[type=number] {
-            -moz-appearance: textfield;
+            -webkit-appearance: none; margin: 0;
         }
 
         #view-inter .footer-summary-inter {
-            margin-top: 25px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%;
+            margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%;
         }
         #view-inter .summary-box-inter {
-            background: white; padding: 15px 20px; border-radius: 10px; border: 3px solid #FFC107;
-            display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 220px;
+            background: white; padding: 10px; border-radius: 10px; border: 3px solid #FFC107;
+            display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 180px;
         }
-        #view-inter .val-display-inter { font-size: 20px !important; color: #2e7d32; }
+        #view-inter .val-display-inter { font-size: 18px !important; color: #2e7d32; }
 
-        select {
-            padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 1rem;
-        }
+        select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
 
         @media print {
-            header, .header-controls-inter, .btn-clear { display: none !important; }
+            .header-controls-inter, .btn-clear { display: none !important; }
             body { background: white; }
-            .main-wrapper { overflow: visible; }
             .container { padding: 0; }
         }
     </style>
@@ -107,7 +116,6 @@
 <body>
 
 <div class="main-wrapper">
-    <header>Control de Envíos Interrapidísimo</header>
     <div class="container">
         <div id="view-inter">
             <div class="header-controls-inter">
@@ -124,7 +132,9 @@
                 </div>
                 <button class="btn btn-clear" style="width: auto;" onclick="clearAllFieldsInter()">LIMPIAR MES</button>
             </div>
+
             <div class="table-container-inter" id="mainContainerInter"></div>
+
             <div class="footer-summary-inter">
                 <div class="summary-box-inter"><span>TOTAL VALOR</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #2196F3;"><span>TOTAL ENVÍOS</span><span id="totalEnviosInter" class="val-display-inter" style="color: #1976D2;">0</span></div>
@@ -135,7 +145,6 @@
     </div>
 </div>
 
-<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
 
@@ -174,11 +183,17 @@
         generateTablesInter();
     }
 
+    // Si n es 0 o vacío, devuelve cadena vacía para que el input esté en blanco
     function formatWithDotsInter(n) { 
-        if(!n) return "";
+        if(!n || n == "0") return "";
         return n.toString().replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, "."); 
     }
-    function cleanDotsInter(s) { return s.toString().replace(/\./g, "") || "0"; }
+
+    function cleanDotsInter(s) { 
+        let val = s.toString().replace(/\./g, "");
+        return val === "" ? "" : val;
+    }
+
     function getStorageKeyInter() { return `inter_local_${yearSelectInter.value}_${monthSelectInter.value}`; }
 
     function saveInterData() {
@@ -186,11 +201,14 @@
         const dataToSave = {};
         rows.forEach(row => {
             const dateKey = row.getAttribute('data-date');
-            dataToSave[dateKey] = {
-                m: cleanDotsInter(row.querySelector('.currency-input').value),
-                a: row.querySelector('.val-a').value,
-                b: row.querySelector('.val-b').value
-            };
+            const mVal = cleanDotsInter(row.querySelector('.currency-input').value);
+            const aVal = row.querySelector('.val-a').value;
+            const bVal = row.querySelector('.val-b').value;
+            
+            // Solo guardar si hay algún dato para no llenar de basura la DB
+            if(mVal || aVal || bVal) {
+                dataToSave[dateKey] = { m: mVal, a: aVal, b: bVal };
+            }
         });
         const key = getStorageKeyInter();
         localStorage.setItem(key, JSON.stringify(dataToSave));
@@ -202,7 +220,9 @@
         let totalDinero = 0;
         let totalCantidades = 0;
         document.querySelectorAll('.data-row-inter').forEach(row => {
-            totalDinero += parseInt(cleanDotsInter(row.querySelector('.currency-input').value)) || 0;
+            const valStr = cleanDotsInter(row.querySelector('.currency-input').value);
+            totalDinero += parseInt(valStr) || 0;
+            
             const a = parseInt(row.querySelector('.val-a').value) || 0;
             const b = parseInt(row.querySelector('.val-b').value) || 0;
             const sumaFila = a + b;
@@ -211,10 +231,13 @@
         });
         const ganancia = Math.floor(totalDinero * 0.20);
         const impuestoIca = Math.floor(totalDinero * 0.00414);
+        
         totalGeneralDispInter.innerHTML = "$ " + formatWithDotsInter(totalDinero || 0);
+        if(totalDinero === 0) totalGeneralDispInter.innerHTML = "$ 0";
+        
         totalEnviosDispInter.innerHTML = totalCantidades;
-        totalGananciaDispInter.innerHTML = "$ " + formatWithDotsInter(ganancia);
-        totalIcaDispInter.innerHTML = "$ " + formatWithDotsInter(impuestoIca);
+        totalGananciaDispInter.innerHTML = "$ " + (totalDinero > 0 ? formatWithDotsInter(ganancia) : "0");
+        totalIcaDispInter.innerHTML = "$ " + (totalDinero > 0 ? formatWithDotsInter(impuestoIca) : "0");
     }
 
     function generateTablesInter() {
@@ -228,41 +251,63 @@
             
             let savedData = JSON.parse(localStorage.getItem(key)) || {};
             containerInter.innerHTML = '';
-            let days = [];
+            
+            let daysCol1 = [];
+            let daysCol2 = [];
+            
             let date = new Date(year, month, 1);
             while (date.getMonth() === month) {
                 if (date.getDay() !== 0) {
                     let mName = date.toLocaleString('es-ES', { month: 'short' }).toUpperCase();
-                    days.push(`${mName}-${date.getDate()}`);
+                    let dayObj = { label: `${mName}-${date.getDate()}`, dayNum: date.getDate() };
+                    if (date.getDate() <= 15) { daysCol1.push(dayObj); } 
+                    else { daysCol2.push(dayObj); }
                 }
                 date.setDate(date.getDate() + 1);
             }
-            containerInter.appendChild(createTableInter(days, savedData));
+            
+            containerInter.appendChild(createTableInter(daysCol1, savedData));
+            containerInter.appendChild(createTableInter(daysCol2, savedData));
             calculateSummariesInter();
         });
     }
 
     function createTableInter(dayList, savedData) {
         const table = document.createElement('table');
-        table.innerHTML = `<thead><tr><th>MES</th><th>VALOR</th><th>CANT 1</th><th>CANT 2</th><th>TOTAL</th></tr></thead>`;
+        table.innerHTML = `<thead><tr><th>MES</th><th>VALOR</th><th class="col-cant">C1</th><th class="col-cant">C2</th><th class="col-total">TOT</th></tr></thead>`;
         const tbody = document.createElement('tbody');
-        dayList.forEach(dayStr => {
+        dayList.forEach(dayObj => {
             const tr = document.createElement('tr');
             tr.className = 'data-row-inter';
-            tr.setAttribute('data-date', dayStr);
-            const rowData = savedData[dayStr] || { m: "", a: "", b: "" };
+            tr.setAttribute('data-date', dayObj.label);
+            const rowData = savedData[dayObj.label] || { m: "", a: "", b: "" };
+            
             tr.innerHTML = `
-                <td class="date-col">${dayStr}</td>
-                <td class="currency-col" onclick="this.querySelector('.currency-input').focus()">
-                    <span class="currency-prefix">$</span>
-                    <input class="currency-input" type="text" value="${rowData.m ? formatWithDotsInter(rowData.m) : ""}">
+                <td class="date-col">${dayObj.label}</td>
+                <td style="padding:0">
+                    <div class="currency-col" onclick="this.querySelector('.currency-input').focus()">
+                        <span class="currency-prefix">$</span>
+                        <input class="currency-input" type="text" value="${formatWithDotsInter(rowData.m)}">
+                    </div>
                 </td>
-                <td><input type="number" class="small-input val-a" value="${rowData.a || ""}"></td>
-                <td><input type="number" class="small-input val-b" value="${rowData.b || ""}"></td>
-                <td class="row-total-inter"></td>`;
-            tr.querySelector('.currency-input').oninput = (e) => { e.target.value = formatWithDotsInter(e.target.value); saveInterData(); };
-            tr.querySelector('.val-a').oninput = saveInterData;
-            tr.querySelector('.val-b').oninput = saveInterData;
+                <td class="col-cant"><input type="number" class="small-input val-a" value="${rowData.a || ""}"></td>
+                <td class="col-cant"><input type="number" class="small-input val-b" value="${rowData.b || ""}"></td>
+                <td class="row-total-inter col-total"></td>`;
+            
+            const curInput = tr.querySelector('.currency-input');
+            curInput.oninput = (e) => { 
+                e.target.value = formatWithDotsInter(e.target.value); 
+                saveInterData(); 
+            };
+            
+            const inputsCant = tr.querySelectorAll('.small-input');
+            inputsCant.forEach(inp => {
+                inp.oninput = function() {
+                    if(this.value.length > 3) this.value = this.value.slice(0,3);
+                    saveInterData();
+                };
+            });
+
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
