@@ -1,4 +1,3 @@
-<!-- ... (Todo el CSS y HTML se mantiene igual) ... -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -83,7 +82,7 @@
             font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; margin-bottom: 5px;
         }
 
-        .btn-print { background: #000; }
+        .btn-print { background: #000; margin-top: 15px; }
         .highlight-res { color: var(--primary); font-size: 1.2rem; font-weight: bold; background: #f0f7ff; }
         .highlight-profit { color: var(--secondary); font-size: 1.2rem; font-weight: bold; background: #f0fff4; }
 
@@ -105,7 +104,7 @@
            ========================================== */
         @media print {
             @page {
-                size: 58mm auto; /* Ancho 58mm, largo automático */
+                size: 58mm auto;
                 margin: 0;
             }
             body {
@@ -114,7 +113,7 @@
                 padding: 0;
                 width: 58mm;
             }
-            .no-print, .remesas-nav, .view-content-form, h3, label, input, .btn, .remesas-grid > :not(.view-content-preview) {
+            .no-print, .remesas-nav, .view-content-form, h3, label, input, .btn, .btn-print, .remesas-grid > :not(.view-content-preview) {
                 display: none !important;
             }
             .view, .remesas-grid, .card {
@@ -129,7 +128,7 @@
                 width: 58mm !important;
             }
             .printable-area {
-                width: 48mm !important; /* Área real de impresión */
+                width: 48mm !important;
                 margin: 0 auto !important;
                 padding: 5mm 0 !important;
                 border: none !important;
@@ -139,7 +138,6 @@
             .ticket-table { font-size: 14px; }
         }
 
-        /* Responsivo para celulares (Pantalla) */
         @media (max-width: 768px) {
             .remesas-grid { grid-template-columns: 1fr; }
             .printable-area { width: 100%; }
@@ -188,7 +186,6 @@
                         <div><label>Bolívares</label><input type="text" id="v-bs-llegan" readonly></div>
                         <div><label>Ganancia</label><input type="text" id="v-ganancia" readonly class="highlight-profit"></div>
                     </div>
-                    <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Recibo</button>
                 </div>
             </div>
 
@@ -196,6 +193,8 @@
             <div class="view-content-preview">
                 <div class="card">
                     <label class="no-print" style="text-align: center; margin-bottom: 10px;">Vista Previa (58mm)</label>
+                    
+                    <!-- Ticket -->
                     <div id="vzla-ticket-preview" class="printable-area">
                         <div class="ticket-header">MULTISERVICIOS IRUSAGA</div>
                         <div class="ticket-header" style="font-size: 10px;">RECIBO DE ENVIO</div>
@@ -210,6 +209,9 @@
                         <div class="ticket-divider"></div>
                         <div style="font-size: 10px; text-align: center;">VERIFIQUE SUS DATOS<br>GRACIAS POR SU COMPRA</div>
                     </div>
+
+                    <!-- BOTÓN AHORA DEBAJO DEL TICKET -->
+                    <button class="btn btn-print no-print" onclick="window.print()">🖨️ Imprimir Recibo</button>
                 </div>
             </div>
 
@@ -252,7 +254,6 @@
         }
 
         window.onload = function() {
-            // Cargar desde Firebase
             db.ref('remesas_config').once('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -302,7 +303,6 @@
             localStorage.setItem('v-tasa-dia', tDiaVal); 
             localStorage.setItem('v-puntos', puntosVal);
             
-            // Sincronizar con Firebase
             db.ref('remesas_config').set({ tasaDia: tDiaVal, puntos: puntosVal });
 
             const tDia = parseFloat(tDiaVal) || 0;
