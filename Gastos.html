@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financiero Pro</title>
+    <!-- Icono de pestaña con fondo blanco y símbolo de dólar -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='4' fill='white'/><path fill='%237c4dff' d='M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z'/></svg>">
+    
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --card-bg: #161b22;
+            --input-bg: #0d1117;
+            --accent: #7c4dff;
+            --accent-hover: #9575cd;
+            --success: #00c853;
+            --danger: #ff1744;
+            --text-main: #ffffff;
+            --text-dim: #8b949e;
+            --border: #30363d;
+            --row-checked: rgba(0, 200, 83, 0.1); 
+        }
+
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .main-control-section {
+            grid-column: 1 / -1;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 10px 25px; /* Reducido para el modo colapsado */
+        }
+
+        /* Estilo para que el summary del control principal se vea como el encabezado anterior */
+        .main-control-section summary {
+            list-style: none;
+            cursor: pointer;
+            outline: none;
+            padding: 15px 0;
+        }
+        
+        .main-control-section summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .integrated-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .integrated-header label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .month-picker select {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .summary-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 20px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: var(--input-bg);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-card label { color: var(--text-dim); font-size: 0.8rem; display: block; margin-bottom: 8px; text-transform: uppercase; }
+        .stat-card .value { font-size: 1.4rem; font-weight: 800; }
+
+        .income-container {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .input-box { flex: 1; }
+        .input-box label { display: block; font-size: 0.7rem; color: var(--text-dim); margin-bottom: 5px; }
+        
+        input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.2); }
+
+        .expense-area { grid-column: span 1; }
+
+        details {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        summary {
+            padding: 20px;
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        summary div { display: flex; flex-direction: column; }
+        summary .sum-total { color: var(--accent); font-size: 1.1rem; }
+
+        .details-content { padding: 0 15px 15px 15px; border-top: 1px solid var(--border); }
+
+        .item-header {
+            display: grid; 
+            grid-template-columns: 30px 1fr 45px 1.2fr 1.2fr 40px; 
+            gap: 10px;
+            padding: 10px 5px; font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase;
+        }
+
+        .item-row { 
+            display: grid; 
+            grid-template-columns: 30px 1fr 45px 1.2fr 1.2fr 40px; 
+            gap: 8px; 
+            margin-bottom: 8px; 
+            align-items: center;
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .item-row.is-checked {
+            background-color: var(--row-checked);
+            border: 1px solid rgba(0, 200, 83, 0.3);
+        }
+
+        .item-row input { padding: 8px; font-size: 0.85rem; }
+        
+        .iprice, .itotal {
+            text-align: right;
+        }
+
+        .itotal {
+            background: transparent !important;
+            border: none !important;
+            color: var(--accent);
+            font-weight: bold;
+            pointer-events: none;
+            width: 100%;
+        }
+
+        .icheck {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--success);
+        }
+
+        .btn-add {
+            width: 100%; padding: 10px; background: transparent; border: 1px dashed var(--accent);
+            color: var(--accent); border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px;
+        }
+
+        .btn-del { background: rgba(255, 23, 68, 0.1); color: var(--danger); border: none; border-radius: 5px; height: 32px; cursor: pointer; }
+        .val-positive { color: var(--success); }
+        .val-negative { color: var(--danger); }
+
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .expense-area { grid-column: 1 / -1; }
+            .income-container { flex-direction: column; align-items: stretch; }
+            .item-header, .item-row { grid-template-columns: 30px 1fr 40px 1fr 1fr 35px; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    
+    <div class="main-control-section">
+        <details id="det-main-summary">
+            <summary>
+                <div class="integrated-header" style="width: 100%;">
+                    <label>Periodo de Balance ▼</label>
+                    <div class="month-picker" onclick="event.stopPropagation()">
+                        <select id="monthSelector" onchange="changeMonth()">
+                            <option>Enero</option><option>Febrero</option><option>Marzo</option>
+                            <option>Abril</option><option>Mayo</option><option>Junio</option>
+                            <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+                            <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+                        </select>
+                    </div>
+                </div>
+            </summary>
+            
+            <div class="summary-content">
+                <div class="summary-grid">
+                    <div class="stat-card">
+                        <label>Ingresos Totales</label>
+                        <div class="value" id="stat-ingresos">$ 0</div>
+                    </div>
+                    <div class="stat-card">
+                        <label>Egresos Totales</label>
+                        <div class="value" style="color: var(--text-dim);" id="stat-egresos">$ 0</div>
+                    </div>
+                    <div class="stat-card" style="border-bottom: 3px solid var(--accent);">
+                        <label>Saldo a Favor</label>
+                        <div class="value" id="stat-saldo">$ 0</div>
+                    </div>
+                </div>
+
+                <div class="income-container">
+                    <div class="input-box">
+                        <label>Ingreso Principal</label>
+                        <input type="text" id="income1" placeholder="$ 0" oninput="formatAndCalc(this)">
+                    </div>
+                    <div class="input-box">
+                        <label>Ingreso Extra</label>
+                        <input type="text" id="income2" placeholder="$ 0" oninput="formatAndCalc(this)">
+                    </div>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <div class="expense-area">
+        <details id="det-casa" open>
+            <summary>
+                <div>CASA <span style="font-size: 0.7rem; color: var(--text-dim);">Gastos de Vivienda</span></div>
+                <span class="sum-total" id="sum-casa">$ 0</span>
+            </summary>
+            <div class="details-content">
+                <div class="item-header">
+                    <div></div><div>Concepto</div><div>Cant.</div><div>Precio</div><div>Total</div><div></div>
+                </div>
+                <div id="items-casa"></div>
+                <button class="btn-add" onclick="addItem('casa')">+ Nuevo Item</button>
+            </div>
+        </details>
+    </div>
+
+    <div class="expense-area">
+        <details id="det-local" open>
+            <summary>
+                <div>LOCAL <span style="font-size: 0.7rem; color: var(--text-dim);">Gastos de Negocio</span></div>
+                <span class="sum-total" id="sum-local">$ 0</span>
+            </summary>
+            <div class="details-content">
+                <div class="item-header">
+                    <div></div><div>Concepto</div><div>Cant.</div><div>Precio</div><div>Total</div><div></div>
+                </div>
+                <div id="items-local"></div>
+                <button class="btn-add" onclick="addItem('local')">+ Nuevo Item</button>
+            </div>
+        </details>
+    </div>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('budget_pro_v4')) || {};
+
+    const currency = new Intl.NumberFormat('es-CO', {
+        style: 'currency', currency: 'COP', minimumFractionDigits: 0
+    });
+
+    function changeMonth() {
+        loadMonthData(document.getElementById('monthSelector').value);
+    }
+
+    function formatAndCalc(input) {
+        let val = input.value.replace(/\D/g, "");
+        input.value = val ? Number(val).toLocaleString('es-CO') : "";
+        calculate();
+    }
+
+    function addItem(type, n="", q=1, p="", c=false) {
+        const div = document.createElement('div');
+        div.className = 'item-row' + (c ? ' is-checked' : '');
+        div.innerHTML = `
+            <input type="checkbox" class="icheck" ${c ? 'checked' : ''} onchange="toggleCheck(this)">
+            <input type="text" placeholder="..." value="${n}" oninput="save()">
+            <input type="number" value="${q}" class="iqty" oninput="calculate()">
+            <input type="text" value="${p}" class="iprice" placeholder="$ 0" oninput="formatAndCalc(this)">
+            <input type="text" class="itotal" readonly value="$ 0">
+            <button class="btn-del" onclick="this.parentElement.remove(); calculate();">×</button>
+        `;
+        document.getElementById(`items-${type}`).appendChild(div);
+        calculate();
+    }
+
+    function toggleCheck(checkbox) {
+        const row = checkbox.parentElement;
+        if (checkbox.checked) {
+            row.classList.add('is-checked');
+        } else {
+            row.classList.remove('is-checked');
+        }
+        save();
+    }
+
+    function calculate() {
+        const i1 = parse(document.getElementById('income1').value);
+        const i2 = parse(document.getElementById('income2').value);
+        const totalIncome = i1 + i2;
+
+        const totalCasa = calcSection('casa');
+        const totalLocal = calcSection('local');
+        const totalExpenses = totalCasa + totalLocal;
+        const balance = totalIncome - totalExpenses;
+
+        document.getElementById('stat-ingresos').innerText = currency.format(totalIncome);
+        document.getElementById('stat-egresos').innerText = currency.format(totalExpenses);
+        
+        const balanceEl = document.getElementById('stat-saldo');
+        balanceEl.innerText = currency.format(balance);
+        balanceEl.className = 'value ' + (balance < 0 ? 'val-negative' : 'val-positive');
+
+        document.getElementById('sum-casa').innerText = currency.format(totalCasa);
+        document.getElementById('sum-local').innerText = currency.format(totalLocal);
+
+        save();
+    }
+
+    function calcSection(type) {
+        let sub = 0;
+        document.querySelectorAll(`#items-${type} .item-row`).forEach(row => {
+            const q = row.querySelector('.iqty').value || 0;
+            const p = parse(row.querySelector('.iprice').value);
+            const rowTotal = q * p;
+            
+            row.querySelector('.itotal').value = currency.format(rowTotal);
+            
+            sub += rowTotal;
+        });
+        return sub;
+    }
+
+    function parse(s) { return parseFloat(s.toString().replace(/\./g, '')) || 0; }
+
+    function save() {
+        const m = document.getElementById('monthSelector').value;
+        db[m] = {
+            i1: document.getElementById('income1').value,
+            i2: document.getElementById('income2').value,
+            casa: grab('casa'),
+            local: grab('local')
+        };
+        localStorage.setItem('budget_pro_v4', JSON.stringify(db));
+        localStorage.setItem('last_month_viewed', m);
+    }
+
+    function grab(type) {
+        return Array.from(document.querySelectorAll(`#items-${type} .item-row`)).map(row => ({
+            c: row.querySelector('.icheck').checked,
+            n: row.querySelectorAll('input')[1].value,
+            q: row.querySelectorAll('input')[2].value,
+            p: row.querySelectorAll('input')[3].value
+        }));
+    }
+
+    function loadMonthData(m) {
+        document.getElementById('items-casa').innerHTML = "";
+        document.getElementById('items-local').innerHTML = "";
+        const data = db[m];
+        if (data) {
+            document.getElementById('income1').value = data.i1 || "";
+            document.getElementById('income2').value = data.i2 || "";
+            data.casa.forEach(i => addItem('casa', i.n, i.q, i.p, i.c));
+            data.local.forEach(i => addItem('local', i.n, i.q, i.p, i.c));
+        } else {
+            document.getElementById('income1').value = "";
+            document.getElementById('income2').value = "";
+        }
+        calculate();
+    }
+
+    window.onload = () => {
+        const lastMonth = localStorage.getItem('last_month_viewed');
+        if (lastMonth) {
+            document.getElementById('monthSelector').value = lastMonth;
+        }
+        loadMonthData(document.getElementById('monthSelector').value);
+    };
+</script>
+
+    <!-- FIREBASE CONNECTION -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyD8UmZOWnI3_RFronTxFLYTVssTalnsiXI",
+          authDomain: "gastosprestamoscuentasnequi.firebaseapp.com",
+          databaseURL: "https://gastosprestamoscuentasnequi-default-rtdb.firebaseio.com",
+          projectId: "gastosprestamoscuentasnequi",
+          storageBucket: "gastosprestamoscuentasnequi.firebasestorage.app",
+          messagingSenderId: "350167767655",
+          appId: "1:350167767655:web:ea01b86a4ec3231c4352c2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+    </script>
+</body>
+</html>

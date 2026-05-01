@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja Pro - Compact Edition</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --tullave-accent: #10b981;
+            --banco-accent: #facc15;
+            --input-bg: #334155;
+            --border-color: #475569;
+            /* Tamaño ajustado para que quepa en una sola página */
+            --base-font-size: 22px; 
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden; /* Evita scroll si la pantalla es estándar */
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 5px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            flex: 1;
+            min-width: 450px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 24px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .header-tullave { background-color: var(--tullave-accent); color: #000; }
+        .header-banco { background-color: var(--banco-accent); color: #000; }
+
+        .subheader td {
+            color: var(--text-dim);
+            font-size: 14px;
+            text-transform: uppercase;
+            padding: 5px 0;
+            text-align: center;
+        }
+
+        td { 
+            padding: 6px 4px; 
+            font-size: var(--base-font-size);
+        }
+
+        .label-val { width: 140px; }
+
+        input {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            text-align: right;
+            font-size: var(--base-font-size);
+            font-weight: bold;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .total-row-cell {
+            text-align: right;
+            min-width: 160px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .footer-section {
+            border-top: 1px dashed var(--border-color);
+            margin-top: 10px;
+        }
+
+        .grand-total-label {
+            font-size: 20px;
+            color: var(--text-dim);
+        }
+
+        .grand-total-val {
+            font-size: 30px;
+            color: white;
+            text-align: right;
+            border-bottom: 3px solid;
+        }
+
+        .tullave-border { border-color: var(--tullave-accent); }
+        .banco-border { border-color: var(--banco-accent); }
+
+        .btn-clear {
+            margin-top: 15px;
+            background: #ef4444;
+            border: none;
+            color: white;
+            padding: 10px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+
+        .btn-clear:hover { background: #dc2626; }
+
+        .spacer { height: 35px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- TABLA TU LLAVE -->
+        <div class="card">
+            <table id="table-tl">
+                <tr><th colspan="3" class="header-tullave">TU LLAVE</th></tr>
+                <tr class="subheader">
+                    <td>VALOR</td>
+                    <td>CANT</td>
+                    <td style="text-align: right;">TOTAL</td>
+                </tr>
+                <tr data-val="100000">
+                    <td class="label-val">$ 100k</td>
+                    <td><input type="number" class="qty" id="tl_100k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="50000">
+                    <td class="label-val">$ 50k</td>
+                    <td><input type="number" class="qty" id="tl_50k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="20000">
+                    <td class="label-val">$ 20k</td>
+                    <td><input type="number" class="qty" id="tl_20k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="10000">
+                    <td class="label-val">$ 10k</td>
+                    <td><input type="number" class="qty" id="tl_10k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="5000">
+                    <td class="label-val">$ 5k</td>
+                    <td><input type="number" class="qty" id="tl_5k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="2000">
+                    <td class="label-val">$ 2k</td>
+                    <td><input type="number" class="qty" id="tl_2k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr>
+                    <td class="label-val">Monedas</td>
+                    <td><input type="text" class="manual" id="tl_monedas"></td>
+                    <td class="total-row-cell" id="tl_monedas_total">$ 0</td>
+                </tr>
+                <tr class="footer-section">
+                    <td class="grand-total-label">TULLAVE</td>
+                    <td colspan="2"><input type="text" class="manual" id="tl_extra"></td>
+                </tr>
+                <tr>
+                    <td class="grand-total-label">TOTAL</td>
+                    <td colspan="2" class="grand-total-val tullave-border" id="tl_grand_total">$ 0</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- TABLA BANCOLOMBIA -->
+        <div class="card">
+            <table id="table-bc">
+                <tr><th colspan="3" class="header-banco">BANCOLOMBIA</th></tr>
+                <tr class="subheader">
+                    <td>VALOR</td>
+                    <td>CANT</td>
+                    <td style="text-align: right;">TOTAL</td>
+                </tr>
+                <tr data-val="100000">
+                    <td class="label-val">$ 100k</td>
+                    <td><input type="number" class="qty" id="bc_100k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="50000">
+                    <td class="label-val">$ 50k</td>
+                    <td><input type="number" class="qty" id="bc_50k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="20000">
+                    <td class="label-val">$ 20k</td>
+                    <td><input type="number" class="qty" id="bc_20k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="10000">
+                    <td class="label-val">$ 10k</td>
+                    <td><input type="number" class="qty" id="bc_10k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="5000">
+                    <td class="label-val">$ 5k</td>
+                    <td><input type="number" class="qty" id="bc_5k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr data-val="2000">
+                    <td class="label-val">$ 2k</td>
+                    <td><input type="number" class="qty" id="bc_2k"></td>
+                    <td class="total-row-cell">$ 0</td>
+                </tr>
+                <tr class="spacer"><td></td><td></td><td></td></tr>
+                <tr>
+                    <td class="grand-total-label">Monedas</td>
+                    <td colspan="2"><input type="text" class="manual" id="bc_monedas"></td>
+                </tr>
+                <tr>
+                    <td class="grand-total-label">TOTAL</td>
+                    <td colspan="2" class="grand-total-val banco-border" id="bc_grand_total">$ 0</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <button class="btn-clear" onclick="clearData()">LIMPIAR TODO</button>
+
+    <script>
+        const formatCOP = (num) => '$ ' + new Intl.NumberFormat('de-DE').format(num);
+        const cleanNum = (str) => parseInt(str.toString().replace(/\D/g, '')) || 0;
+
+        function init() {
+            const savedData = JSON.parse(localStorage.getItem('cajaCompactData') || '{}');
+            Object.keys(savedData).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = savedData[id];
+                    if (el.classList.contains('manual') && el.value !== "") {
+                        el.value = new Intl.NumberFormat('de-DE').format(cleanNum(el.value));
+                    }
+                }
+            });
+            calculate();
+        }
+
+        function saveData() {
+            const inputs = document.querySelectorAll('input');
+            const data = {};
+            inputs.forEach(input => { data[input.id] = input.value; });
+            localStorage.setItem('cajaCompactData', JSON.stringify(data));
+        }
+
+        function calculate() {
+            // TU LLAVE
+            let subTL = 0;
+            document.querySelectorAll('#table-tl tr[data-val]').forEach(row => {
+                let val = parseInt(row.getAttribute('data-val'));
+                let qty = parseInt(row.querySelector('.qty').value) || 0;
+                let total = val * qty;
+                subTL += total;
+                row.querySelector('.total-row-cell').innerText = formatCOP(total);
+            });
+            let monTL = cleanNum(document.getElementById('tl_monedas').value);
+            let extTL = cleanNum(document.getElementById('tl_extra').value);
+            document.getElementById('tl_monedas_total').innerText = formatCOP(monTL);
+            document.getElementById('tl_grand_total').innerText = formatCOP(subTL + monTL + extTL);
+
+            // BANCOLOMBIA
+            let subBC = 0;
+            document.querySelectorAll('#table-bc tr[data-val]').forEach(row => {
+                let val = parseInt(row.getAttribute('data-val'));
+                let qty = parseInt(row.querySelector('.qty').value) || 0;
+                let total = val * qty;
+                subBC += total;
+                row.querySelector('.total-row-cell').innerText = formatCOP(total);
+            });
+            let monBC = cleanNum(document.getElementById('bc_monedas').value);
+            document.getElementById('bc_grand_total').innerText = formatCOP(subBC + monBC);
+            
+            saveData();
+        }
+
+        function clearData() {
+            if (confirm('¿BORRAR TODO?')) {
+                document.querySelectorAll('input').forEach(i => i.value = "");
+                localStorage.removeItem('cajaCompactData');
+                calculate();
+            }
+        }
+
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                if (e.target.classList.contains('manual')) {
+                    let val = cleanNum(e.target.value);
+                    e.target.value = val === 0 ? "" : new Intl.NumberFormat('de-DE').format(val);
+                }
+                calculate();
+            });
+        });
+
+        window.onload = init;
+    </script>
+
+    <!-- FIREBASE CONNECTION -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyD8UmZOWnI3_RFronTxFLYTVssTalnsiXI",
+          authDomain: "gastosprestamoscuentasnequi.firebaseapp.com",
+          databaseURL: "https://gastosprestamoscuentasnequi-default-rtdb.firebaseio.com",
+          projectId: "gastosprestamoscuentasnequi",
+          storageBucket: "gastosprestamoscuentasnequi.firebasestorage.app",
+          messagingSenderId: "350167767655",
+          appId: "1:350167767655:web:ea01b86a4ec3231c4352c2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+    </script>
+</body>
+</html>
