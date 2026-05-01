@@ -61,7 +61,6 @@
         
         #view-inter .date-col { background-color: #FFC107; width: 70px; }
         
-        /* AJUSTE COLUMNA VALOR */
         #view-inter .currency-col { 
             display: flex; 
             align-items: center; 
@@ -90,17 +89,12 @@
             outline: none; background: transparent; 
         }
 
-        #view-inter input::-webkit-outer-spin-button,
-        #view-inter input::-webkit-inner-spin-button {
-            -webkit-appearance: none; margin: 0;
-        }
-
         #view-inter .footer-summary-inter {
             margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%;
         }
         #view-inter .summary-box-inter {
             background: white; padding: 10px; border-radius: 10px; border: 3px solid #FFC107;
-            display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 180px;
+            display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 160px;
         }
         #view-inter .val-display-inter { font-size: 18px !important; color: #2e7d32; }
 
@@ -136,10 +130,12 @@
             <div class="table-container-inter" id="mainContainerInter"></div>
 
             <div class="footer-summary-inter">
-                <div class="summary-box-inter"><span>TOTAL VALOR</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
+                <div class="summary-box-inter"><span>TOTAL VALOR (BASE)</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #2196F3;"><span>TOTAL ENVÍOS</span><span id="totalEnviosInter" class="val-display-inter" style="color: #1976D2;">0</span></div>
                 <div class="summary-box-inter" style="border-color: #f44336;"><span>20% GANADO</span><span id="totalGananciaInter" class="val-display-inter" style="color: #c62828;">$ 0</span></div>
-                <div class="summary-box-inter" style="border-color: #9c27b0;"><span>IMPUESTO ICA</span><span id="totalIcaInter" class="val-display-inter" style="color: #7b1fa2;">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color: #9c27b0;"><span>ICA (4.14 x 1000)</span><span id="totalIcaInter" class="val-display-inter" style="color: #7b1fa2;">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color: #ff9800;"><span>RETE FUENTE (1%)</span><span id="totalReteInter" class="val-display-inter" style="color: #e65100;">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color: #009688;"><span>TOTAL NETO</span><span id="totalNetoInter" class="val-display-inter" style="color: #00796b;">$ 0</span></div>
             </div>
         </div>
     </div>
@@ -164,10 +160,14 @@
     const monthSelectInter = document.getElementById('monthSelectInter');
     const yearSelectInter = document.getElementById('yearSelectInter');
     const containerInter = document.getElementById('mainContainerInter');
+    
+    // Selectores del resumen
     const totalGeneralDispInter = document.getElementById('totalGeneralInter');
     const totalEnviosDispInter = document.getElementById('totalEnviosInter');
     const totalGananciaDispInter = document.getElementById('totalGananciaInter');
     const totalIcaDispInter = document.getElementById('totalIcaInter');
+    const totalReteDispInter = document.getElementById('totalReteInter');
+    const totalNetoDispInter = document.getElementById('totalNetoInter');
 
     function initInter() {
         const currentYear = new Date().getFullYear();
@@ -183,7 +183,6 @@
         generateTablesInter();
     }
 
-    // Si n es 0 o vacío, devuelve cadena vacía para que el input esté en blanco
     function formatWithDotsInter(n) { 
         if(!n || n == "0") return "";
         return n.toString().replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, "."); 
@@ -204,8 +203,6 @@
             const mVal = cleanDotsInter(row.querySelector('.currency-input').value);
             const aVal = row.querySelector('.val-a').value;
             const bVal = row.querySelector('.val-b').value;
-            
-            // Solo guardar si hay algún dato para no llenar de basura la DB
             if(mVal || aVal || bVal) {
                 dataToSave[dateKey] = { m: mVal, a: aVal, b: bVal };
             }
@@ -217,11 +214,12 @@
     }
 
     function calculateSummariesInter() {
-        let totalDinero = 0;
+        let totalDineroRecaudado = 0;
         let totalCantidades = 0;
+
         document.querySelectorAll('.data-row-inter').forEach(row => {
             const valStr = cleanDotsInter(row.querySelector('.currency-input').value);
-            totalDinero += parseInt(valStr) || 0;
+            totalDineroRecaudado += parseInt(valStr) || 0;
             
             const a = parseInt(row.querySelector('.val-a').value) || 0;
             const b = parseInt(row.querySelector('.val-b').value) || 0;
@@ -229,15 +227,28 @@
             totalCantidades += sumaFila;
             row.querySelector('.row-total-inter').innerHTML = sumaFila > 0 ? sumaFila : "";
         });
-        const ganancia = Math.floor(totalDinero * 0.20);
-        const impuestoIca = Math.floor(totalDinero * 0.00414);
+
+        // --- LÓGICA DE CÁLCULO SEGÚN IMAGEN ---
         
-        totalGeneralDispInter.innerHTML = "$ " + formatWithDotsInter(totalDinero || 0);
-        if(totalDinero === 0) totalGeneralDispInter.innerHTML = "$ 0";
+        // 1. Ganancia (Pagos a la agencia): es el 20% del recaudo total
+        const ganancia = Math.floor(totalDineroRecaudado * 0.20);
         
+        // 2. ICA: se calcula sobre la GANANCIA (Base), multiplicado por 4.14 / 1000
+        const impuestoIca = Math.floor(ganancia * 0.00414);
+        
+        // 3. Rete Fuente: se calcula sobre la GANANCIA (Base), al 1%
+        const reteFuente = Math.floor(ganancia * 0.01);
+        
+        // 4. Total Neto: Ganancia - ICA - ReteFuente
+        const totalNeto = ganancia - impuestoIca - reteFuente;
+        
+        // Mostrar en pantalla
+        totalGeneralDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalDineroRecaudado) : "0");
         totalEnviosDispInter.innerHTML = totalCantidades;
-        totalGananciaDispInter.innerHTML = "$ " + (totalDinero > 0 ? formatWithDotsInter(ganancia) : "0");
-        totalIcaDispInter.innerHTML = "$ " + (totalDinero > 0 ? formatWithDotsInter(impuestoIca) : "0");
+        totalGananciaDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(ganancia) : "0");
+        totalIcaDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(impuestoIca) : "0");
+        totalReteDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(reteFuente) : "0");
+        totalNetoDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalNeto) : "0");
     }
 
     function generateTablesInter() {
