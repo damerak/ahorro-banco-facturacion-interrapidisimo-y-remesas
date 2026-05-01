@@ -22,44 +22,23 @@
             align-items: center;
         }
 
-        /* --- NAVEGACIÓN SUPERIOR --- */
         .remesas-nav {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            width: 100%;
-            max-width: 1000px;
+            display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 1000px;
         }
 
         .nav-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            background: white;
-            color: var(--primary);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: 0.3s;
-            text-transform: uppercase;
+            flex: 1; padding: 15px; border: none; border-radius: 8px;
+            cursor: pointer; font-weight: bold; background: white; color: var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: 0.3s; text-transform: uppercase;
         }
 
-        .nav-btn.active {
-            background: var(--primary);
-            color: white;
-        }
+        .nav-btn.active { background: var(--primary); color: white; }
 
-        /* --- CONTENEDORES PRINCIPALES --- */
         .view { display: none; width: 100%; max-width: 1000px; }
         .active { display: block; }
 
-        /* --- DISEÑO 2 COLUMNAS (PESOS A BS) --- */
         .remesas-grid {
-            display: grid;
-            grid-template-columns: 1fr 320px;
-            gap: 20px;
-            align-items: start;
+            display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start;
         }
 
         .card {
@@ -68,52 +47,48 @@
         }
 
         label { font-weight: bold; font-size: 0.8rem; color: #555; display: block; margin-bottom: 4px; }
-
         input {
             width: 100%; padding: 10px; margin-bottom: 12px;
-            border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;
-            font-size: 1rem;
+            border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1rem;
         }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-
         .btn {
             width: 100%; padding: 12px; border: none; border-radius: 8px;
             font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; margin-bottom: 5px;
         }
-
         .btn-print { background: #000; margin-top: 15px; }
         .highlight-res { color: var(--primary); font-size: 1.2rem; font-weight: bold; background: #f0f7ff; }
         .highlight-profit { color: var(--secondary); font-size: 1.2rem; font-weight: bold; background: #f0fff4; }
 
-        /* --- ESTILO TICKET (PREVISUALIZACIÓN) --- */
+        /* --- ESTILO TICKET AJUSTADO --- */
         .printable-area {
-            background: white; padding: 10px; border: 1px dashed #666;
+            background: white; padding: 10px; border: 1px solid #eee;
             width: 100%; box-sizing: border-box;
             font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #000;
             text-transform: uppercase;
         }
 
-        .ticket-header { text-align: center; font-size: 14px; margin-bottom: 8px; }
-        .ticket-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .ticket-table td { padding: 5px 0; vertical-align: middle; }
-        .ticket-divider { border-top: 1px dashed #000; margin: 8px 0; border-bottom: none; }
+        .t-center { text-align: center; }
+        .t-left { text-align: left; }
 
-        /* ==========================================
-           CONFIGURACIÓN DE IMPRESIÓN 58mm (48mm área)
-           ========================================== */
+        .ticket-header { font-size: 14px; margin-bottom: 4px; }
+        .ticket-item { margin-bottom: 6px; font-size: 12px; }
+        .ticket-label { display: block; }
+        .ticket-value { display: block; }
+        
+        /* SEPARADOR QUE SE AJUSTA AUTOMÁTICAMENTE */
+        .ticket-divider { 
+            border-top: 1.5px dashed #000;
+            width: 100%;
+            margin: 8px 0;
+            height: 0;
+        }
+
         @media print {
-            @page {
-                size: 58mm auto;
-                margin: 0;
-            }
-            body {
-                background: white;
-                margin: 0;
-                padding: 0;
-                width: 58mm;
-            }
-            .no-print, .remesas-nav, .view-content-form, h3, label, input, .btn, .btn-print, .remesas-grid > :not(.view-content-preview) {
+            @page { size: 58mm auto; margin: 0; }
+            body { background: white; margin: 0; padding: 0; width: 58mm; }
+            .no-print, .remesas-nav, .view-content-form, h3, label, input, .btn, .remesas-grid > :not(.view-content-preview) {
                 display: none !important;
             }
             .view, .remesas-grid, .card {
@@ -124,23 +99,16 @@
                 box-shadow: none !important;
                 border: none !important;
             }
-            .view-content-preview {
-                width: 58mm !important;
-            }
             .printable-area {
-                width: 48mm !important;
+                width: 48mm !important; /* El área real de impresión suele ser 48mm */
                 margin: 0 auto !important;
                 padding: 5mm 0 !important;
                 border: none !important;
-                display: block !important;
             }
-            .ticket-header { font-size: 16px; }
-            .ticket-table { font-size: 14px; }
         }
 
         @media (max-width: 768px) {
             .remesas-grid { grid-template-columns: 1fr; }
-            .printable-area { width: 100%; }
         }
     </style>
 </head>
@@ -155,7 +123,6 @@
     <div id="view-venezuela" class="view active">
         <div class="remesas-grid">
             
-            <!-- Columna Izquierda: Formulario -->
             <div class="view-content-form no-print">
                 <div class="card">
                     <h3>Pesos -> Bolívares</h3>
@@ -170,7 +137,7 @@
                         </div>
                     </div>
                     
-                    <label>Tasa Venta (Suma Automática)</label>
+                    <label>Tasa Venta</label>
                     <input type="text" id="v-tasa-venta" readonly class="highlight-res">
                     
                     <label>Nombre del Cliente</label>
@@ -179,9 +146,6 @@
                     <label>Pesos a Enviar</label>
                     <input type="text" id="v-envio-pesos" placeholder="0" oninput="formatMoneyInput(this); calcVenezuela()">
                     
-                    <label>Costo en Pesos (Tasa Día)</label>
-                    <input type="text" id="v-costo-pesos" readonly style="background-color: #fdfdfd;">
-
                     <div class="grid-2">
                         <div><label>Bolívares</label><input type="text" id="v-bs-llegan" readonly></div>
                         <div><label>Ganancia</label><input type="text" id="v-ganancia" readonly class="highlight-profit"></div>
@@ -189,28 +153,63 @@
                 </div>
             </div>
 
-            <!-- Columna Derecha: Vista Previa y lo que se imprime -->
+            <!-- VISTA PREVIA TICKET -->
             <div class="view-content-preview">
                 <div class="card">
                     <label class="no-print" style="text-align: center; margin-bottom: 10px;">Vista Previa (58mm)</label>
                     
-                    <!-- Ticket -->
                     <div id="vzla-ticket-preview" class="printable-area">
-                        <div class="ticket-header">MULTISERVICIOS IRUSAGA</div>
-                        <div class="ticket-header" style="font-size: 10px;">RECIBO DE ENVIO</div>
+                        <!-- ENCABEZADO CENTRADO -->
+                        <div class="ticket-header t-center">MULTISERVICIOS IRUSAGA</div>
+                        <div class="ticket-header t-center" style="font-size: 10px;">RECIBO DE ENVIO</div>
+                        
                         <div class="ticket-divider"></div>
-                        <table class="ticket-table">
-                            <tr><td>FECHA:</td><td align="right"><span id="vz-date"></span></td></tr>
-                            <tr><td>CLIENTE:</td><td align="right"><span id="vz-nombre"></span></td></tr>
-                            <tr><td>TASA:</td><td align="right"><span id="vz-tasa"></span></td></tr>
-                            <tr><td>PESOS:</td><td align="right">$<span id="vz-pesos"></span></td></tr>
-                            <tr><td colspan="2" style="text-align: center; padding: 15px 0; border-bottom: none;">TOTAL A RECIBIR:<br><span style="font-size: 22px;">Bs <span id="vz-bs">0</span></span></td></tr>
-                        </table>
+                        
+                        <!-- DATOS A LA IZQUIERDA -->
+                        <div class="ticket-item t-left">
+                            <span class="ticket-label">FECHA Y HORA:</span>
+                            <span class="ticket-value" id="vz-date">--/--/----</span>
+                            <span class="ticket-value" id="vz-time">--:-- --</span>
+                        </div>
+
                         <div class="ticket-divider"></div>
-                        <div style="font-size: 10px; text-align: center;">VERIFIQUE SUS DATOS<br>GRACIAS POR SU COMPRA</div>
+
+                        <div class="ticket-item t-left">
+                            <span class="ticket-label">CLIENTE:</span>
+                            <span class="ticket-value" id="vz-nombre">CONSUMIDOR FINAL</span>
+                        </div>
+
+                        <div class="ticket-divider"></div>
+
+                        <div class="ticket-item t-left">
+                            <span class="ticket-label">TASA:</span>
+                            <span class="ticket-value" id="vz-tasa">0</span>
+                        </div>
+
+                        <div class="ticket-divider"></div>
+
+                        <div class="ticket-item t-left">
+                            <span class="ticket-label">VALOR EN PESOS:</span>
+                            <span class="ticket-value">$<span id="vz-pesos">0</span></span>
+                        </div>
+
+                        <div class="ticket-divider"></div>
+                        
+                        <!-- TOTAL CENTRADO -->
+                        <div class="ticket-item t-center">
+                            <span class="ticket-label">TOTAL A RECIBIR:</span>
+                            <span style="font-size: 20px;">Bs <span id="vz-bs">0</span></span>
+                        </div>
+
+                        <div class="ticket-divider"></div>
+                        
+                        <!-- PIE CENTRADO -->
+                        <div class="t-center" style="font-size: 10px;">
+                            VERIFIQUE SUS DATOS<br>
+                            GRACIAS POR LA CONFIANZA
+                        </div>
                     </div>
 
-                    <!-- BOTÓN AHORA DEBAJO DEL TICKET -->
                     <button class="btn btn-print no-print" onclick="window.print()">🖨️ Imprimir Recibo</button>
                 </div>
             </div>
@@ -229,7 +228,6 @@
         </div>
     </div>
 
-    <!-- SCRIPTS FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
 
@@ -259,12 +257,6 @@
                 if (data) {
                     if (data.tasaDia) document.getElementById('v-tasa-dia').value = data.tasaDia;
                     if (data.puntos) document.getElementById('v-puntos').value = data.puntos;
-                    calcVenezuela();
-                } else {
-                    const sT = localStorage.getItem('v-tasa-dia');
-                    const sP = localStorage.getItem('v-puntos');
-                    if (sT) document.getElementById('v-tasa-dia').value = sT;
-                    if (sP) document.getElementById('v-puntos').value = sP;
                     calcVenezuela();
                 }
             });
@@ -300,9 +292,6 @@
             const puntosVal = document.getElementById('v-puntos').value;
             const nombreCliente = document.getElementById('v-nombre-cliente').value.toUpperCase();
             
-            localStorage.setItem('v-tasa-dia', tDiaVal); 
-            localStorage.setItem('v-puntos', puntosVal);
-            
             db.ref('remesas_config').set({ tasaDia: tDiaVal, puntos: puntosVal });
 
             const tDia = parseFloat(tDiaVal) || 0;
@@ -319,17 +308,15 @@
                 const ganancia = ePesos - costoPesosTasaDia;
                 
                 document.getElementById('v-bs-llegan').value = formatDisp(bs);
-                document.getElementById('v-costo-pesos').value = formatDisp(costoPesosTasaDia);
                 document.getElementById('v-ganancia').value = formatDisp(ganancia);
                 
-                document.getElementById('vz-date').innerText = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const ahora = new Date();
+                document.getElementById('vz-date').innerText = ahora.toLocaleDateString();
+                document.getElementById('vz-time').innerText = ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 document.getElementById('vz-nombre').innerText = nombreCliente || "CONSUMIDOR FINAL";
                 document.getElementById('vz-tasa').innerText = tVentaLimpia; 
                 document.getElementById('vz-pesos').innerText = formatDisp(ePesos);
                 document.getElementById('vz-bs').innerText = formatDisp(bs);
-            } else {
-                document.getElementById('v-bs-llegan').value = ""; 
-                document.getElementById('vz-bs').innerText = "0";
             }
         }
 
