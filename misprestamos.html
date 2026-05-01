@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Préstamo - Persistencia Total</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --header-bg: #252525;
+            --text-main: #ffffff;
+            --text-dim: #b0b0b0;
+            --accent-color: #00e676; 
+            --box-pending-neon: #ff5252; 
+            --yellow-text: #ffeb3b; 
+            --danger-color: #ff1744;
+            --border-color: #383838;
+            --input-bg: #2c2c2c;
+            --w-large: 200px; 
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { max-width: 1550px; width: 100%; }
+
+        .header-bar {
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            background: var(--header-bg);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .divider { width: 1px; height: 40px; background-color: var(--border-color); margin-bottom: 5px; }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center; 
+            text-align: center;
+        }
+
+        .input-group label {
+            font-size: 0.65rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-group input {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            outline: none;
+            text-align: center;
+            height: 43px;
+            box-sizing: border-box;
+        }
+
+        .w-large { width: var(--w-large); }
+        .w-small { width: 60px; }
+
+        .highlight-box {
+            background: var(--accent-color);
+            color: #000;
+            border-radius: 8px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 43px; 
+            width: var(--w-large);
+            box-sizing: border-box;
+        }
+
+        .highlight-box strong { font-size: 1.2rem; font-weight: 900; }
+
+        .header-reset-btn {
+            background: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            height: 43px;
+            width: var(--w-large);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+
+        .header-reset-btn:hover { background: var(--danger-color); color: white; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr); 
+            gap: 12px;
+        }
+
+        .day-card {
+            background: var(--card-bg);
+            padding: 15px 5px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .day-card.checked { 
+            border-color: var(--accent-color); 
+            background: rgba(0, 230, 118, 0.1);
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.2);
+        }
+
+        .day-card.is-pending { 
+            border-color: var(--box-pending-neon); 
+            background: rgba(255, 82, 82, 0.1); 
+            box-shadow: 0 0 15px rgba(255, 82, 82, 0.3);
+        }
+
+        .day-label { font-weight: bold; color: var(--text-dim); margin-bottom: 10px; font-size: 0.75rem; }
+        
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .day-value { color: var(--text-main); font-weight: 600; font-size: 0.85rem; }
+
+        .p-label {
+            color: var(--yellow-text);
+            font-size: 0.75rem;
+            font-weight: 900;
+            margin-left: 4px;
+        }
+
+        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-color); margin: 0; }
+        .pending-check { accent-color: var(--box-pending-neon) !important; }
+
+        @media (max-width: 1300px) { .divider { display: none; } }
+        @media (max-width: 900px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-bar">
+            <div class="input-group">
+                <label>Total Prestado</label>
+                <input type="text" id="input-prestado" class="w-large" placeholder="0" oninput="handleManualInput(this)">
+            </div>
+            <div class="divider"></div>
+            <div class="input-group">
+                <label>%</label>
+                <input type="number" id="input-porcentaje" class="w-small" value="20" oninput="handleManualInput()">
+            </div>
+            <div class="divider"></div>
+            <div class="input-group">
+                <label>Días</label>
+                <input type="number" id="input-dias" class="w-small" value="30" oninput="handleManualInput()">
+            </div>
+            <div class="divider"></div>
+            <div class="input-group">
+                <label>Total a Pagar</label>
+                <input type="text" id="display-total-final" style="background:transparent; border:1px dashed var(--border-color); color:var(--text-dim); font-weight:bold;" class="w-large" readonly value="$ 0">
+            </div>
+            <div class="divider"></div>
+            <div class="input-group">
+                <label>Cuota Diaria</label>
+                <div class="highlight-box" style="background: #333; color: white; border: 1px solid #444;">
+                    <strong id="header-cuota">$ 0</strong>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="input-group">
+                <label>Saldo Restante</label>
+                <div class="highlight-box">
+                    <strong id="total-display">$ 0</strong>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <button class="header-reset-btn" onclick="resetAll()">Reiniciar</button>
+        </div>
+
+        <div id="days-grid" class="grid"></div>
+        <div style="height: 50px;"></div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'control_prestamo_v20_final_persistencia';
+        
+        const grid = document.getElementById('days-grid');
+        const totalDisplay = document.getElementById('total-display');
+        const headerCuota = document.getElementById('header-cuota');
+        const inputPrestado = document.getElementById('input-prestado');
+        const inputPorcentaje = document.getElementById('input-porcentaje');
+        const inputDias = document.getElementById('input-dias');
+        const displayTotalFinal = document.getElementById('display-total-final');
+
+        const formatter = new Intl.NumberFormat('es-CO', {
+            style: 'currency', currency: 'COP', minimumFractionDigits: 0
+        });
+
+        // Esta función se llama solo cuando el usuario escribe manualmente
+        function handleManualInput(el) {
+            if (el && el.id === 'input-prestado') {
+                let val = el.value.replace(/\D/g, "");
+                el.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            }
+            rebuildGrid();
+            saveData(); // Guardar cambios de configuración
+        }
+
+        function getPrestadoValue() {
+            return parseInt(inputPrestado.value.replace(/\./g, '')) || 0;
+        }
+
+        function calculateFinance() {
+            const prestado = getPrestadoValue();
+            const pct = parseFloat(inputPorcentaje.value) || 0;
+            const dias = parseInt(inputDias.value) || 1;
+            const totalFinal = Math.round(prestado + (prestado * (pct / 100)));
+            const cuota = Math.round(totalFinal / dias);
+            return { totalFinal, cuota, dias };
+        }
+
+        function rebuildGrid() {
+            const { totalFinal, cuota, dias } = calculateFinance();
+            displayTotalFinal.value = formatter.format(totalFinal);
+            headerCuota.textContent = formatter.format(cuota);
+            
+            grid.innerHTML = '';
+            for (let i = 1; i <= dias; i++) {
+                const card = document.createElement('div');
+                card.className = 'day-card';
+                card.id = `card-${i}`;
+                card.innerHTML = `
+                    <span class="day-label">DÍA ${i}</span>
+                    <div class="controls-row">
+                        <span class="day-value">${formatter.format(cuota)}</span>
+                        <input type="checkbox" class="main-check" id="check-${i}" onchange="toggleStatus(${i}, 'paid')">
+                        <span class="p-label">P.</span>
+                        <input type="checkbox" class="pending-check" id="pend-${i}" onchange="toggleStatus(${i}, 'pending')">
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+            updateTotal();
+        }
+
+        function toggleStatus(id, type) {
+            const card = document.getElementById(`card-${id}`);
+            const checkPaid = document.getElementById(`check-${id}`);
+            const checkPend = document.getElementById(`pend-${id}`);
+
+            if (type === 'paid' && checkPaid.checked) {
+                checkPend.checked = false;
+            } else if (type === 'pending' && checkPend.checked) {
+                checkPaid.checked = false;
+            }
+
+            if (checkPaid.checked) {
+                card.classList.add('checked');
+                card.classList.remove('is-pending');
+            } else if (checkPend.checked) {
+                card.classList.add('is-pending');
+                card.classList.remove('checked');
+            } else {
+                card.classList.remove('checked');
+                card.classList.remove('is-pending');
+            }
+
+            updateTotal();
+            saveData(); // Guardar el estado de los checks
+        }
+
+        function updateTotal() {
+            const { totalFinal, cuota } = calculateFinance();
+            const pagados = document.querySelectorAll('.main-check:checked').length;
+            const restante = totalFinal - (pagados * cuota);
+            totalDisplay.textContent = formatter.format(restante < 0 ? 0 : restante);
+        }
+
+        function saveData() {
+            const data = {
+                prestado: inputPrestado.value,
+                porcentaje: inputPorcentaje.value,
+                dias: inputDias.value,
+                checks: []
+            };
+            const dias = parseInt(inputDias.value) || 0;
+            for (let i = 1; i <= dias; i++) {
+                const p = document.getElementById(`check-${i}`);
+                const n = document.getElementById(`pend-${i}`);
+                data.checks.push({
+                    p: p ? p.checked : false,
+                    n: n ? n.checked : false
+                });
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                // 1. Restaurar valores de inputs
+                inputPrestado.value = data.prestado;
+                inputPorcentaje.value = data.porcentaje;
+                inputDias.value = data.dias;
+                
+                // 2. Dibujar la cuadrícula basándose en esos valores
+                rebuildGrid(); 
+
+                // 3. Restaurar los estados de los checks guardados
+                data.checks.forEach((state, index) => {
+                    const id = index + 1;
+                    const card = document.getElementById(`card-${id}`);
+                    const cP = document.getElementById(`check-${id}`);
+                    const cN = document.getElementById(`pend-${id}`);
+                    
+                    if (cP && cN && card) {
+                        cP.checked = state.p; 
+                        cN.checked = state.n;
+                        if (state.p) card.classList.add('checked');
+                        if (state.n) card.classList.add('is-pending');
+                    }
+                });
+                updateTotal();
+            } else {
+                // Configuración inicial por defecto
+                inputPrestado.value = "2.000.000";
+                rebuildGrid();
+            }
+        }
+
+        function resetAll() {
+            if (confirm('¿Reiniciar todo el sistema?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
+
+        // Ejecutar carga al abrir la página
+        loadData();
+    </script>
+</body>
+</html>
