@@ -28,20 +28,20 @@
             background-color: var(--bg);
             color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             justify-content: center;
+            overflow-x: hidden; /* Quitar scroll horizontal del body */
         }
 
         .dashboard {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1200px; /* Un poco más ancho para dar espacio */
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 15px;
         }
 
-        /* Estilo del contenedor principal */
         .main-control-section {
             grid-column: 1 / -1;
             background: var(--card-bg);
@@ -50,7 +50,6 @@
             padding: 0 20px;
         }
 
-        /* Summary sin flecha y centrado vertical */
         .main-control-section summary {
             list-style: none;
             cursor: pointer;
@@ -63,7 +62,6 @@
         
         .main-control-section summary::-webkit-details-marker { display: none; }
 
-        /* Selector ajustado */
         .month-picker select {
             background: var(--accent);
             color: white;
@@ -72,19 +70,11 @@
             border-radius: 12px;
             font-weight: 800;
             cursor: pointer;
-            outline: none;
             font-size: 1rem;
-            width: 100%; /* El selector ocupa el ancho del contenedor pequeño */
-            min-width: 150px;
-            appearance: none; /* Quitar flecha default para estilo pro */
+            min-width: 160px;
             text-align: center;
         }
 
-        .month-picker {
-            width: fit-content;
-        }
-
-        /* Contenido de estadísticas */
         .summary-content {
             display: flex;
             flex-direction: column;
@@ -102,7 +92,7 @@
 
         .stat-card {
             background: var(--input-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 16px;
             border: 1px solid var(--border);
             text-align: center;
@@ -113,12 +103,11 @@
 
         .income-container {
             background: rgba(0,0,0,0.2);
-            padding: 20px;
+            padding: 15px;
             border-radius: 16px;
             border: 1px solid var(--border);
             display: flex;
             gap: 15px;
-            align-items: center;
         }
 
         .input-box { flex: 1; }
@@ -129,7 +118,7 @@
             background: var(--input-bg);
             border: 1px solid var(--border);
             color: white;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             font-size: 1rem;
         }
@@ -141,11 +130,10 @@
             border-radius: 16px;
             border: 1px solid var(--border);
             margin-bottom: 15px;
-            overflow: hidden;
         }
 
         summary {
-            padding: 20px;
+            padding: 15px 20px;
             list-style: none;
             cursor: pointer;
             display: flex;
@@ -154,42 +142,87 @@
             font-weight: bold;
         }
 
-        summary .sum-total { color: var(--accent); font-size: 1.1rem; }
-        .details-content { padding: 0 15px 15px 15px; border-top: 1px solid var(--border); }
+        summary .sum-total { color: var(--accent); font-size: 1.2rem; }
+        .details-content { padding: 10px; border-top: 1px solid var(--border); }
+
+        /* AJUSTE DE COLUMNAS: Concepto amplio, Cantidad justa, Precio y Total balanceados */
+        .item-header, .item-row {
+            display: grid; 
+            grid-template-columns: 25px 1.8fr 55px 1.2fr 1.2fr 35px; 
+            gap: 8px;
+            align-items: center;
+        }
 
         .item-header {
-            display: grid; 
-            grid-template-columns: 30px 1fr 45px 1.2fr 1.2fr 40px; 
-            gap: 10px;
-            padding: 10px 5px; font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase;
+            padding: 5px 10px;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: bold;
         }
 
         .item-row { 
-            display: grid; 
-            grid-template-columns: 30px 1fr 45px 1.2fr 1.2fr 40px; 
-            gap: 8px; 
             margin-bottom: 8px; 
-            align-items: center;
-            padding: 5px;
+            padding: 6px;
             border-radius: 10px;
+            border: 1px solid transparent;
         }
 
-        .item-row.is-checked { background-color: var(--row-checked); border: 1px solid rgba(0, 200, 83, 0.3); }
-        .itotal { background: transparent !important; border: none !important; color: var(--accent); font-weight: bold; pointer-events: none; text-align: right; }
+        .item-row.is-checked { 
+            background-color: var(--row-checked); 
+            border-color: rgba(0, 200, 83, 0.3); 
+        }
+
+        /* Estilo específico para que los inputs no se corten */
+        .item-row input {
+            padding: 8px 5px;
+            font-size: 0.95rem; /* Letra grande pero ajustada */
+            width: 100%;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .itotal { 
+            background: transparent !important; 
+            border: none !important; 
+            color: var(--accent) !important; 
+            font-weight: 800; 
+            text-align: right;
+            padding-right: 0 !important;
+        }
+
         .iprice { text-align: right; }
-        .icheck { width: 18px; height: 18px; cursor: pointer; accent-color: var(--success); }
+        .iqty { text-align: center; }
+
+        .icheck { width: 20px; height: 20px; cursor: pointer; accent-color: var(--success); }
 
         .btn-add {
-            width: 100%; padding: 10px; background: transparent; border: 1px dashed var(--accent);
-            color: var(--accent); border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px;
+            width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--accent);
+            color: var(--accent); border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 5px;
         }
 
-        .btn-del { background: rgba(255, 23, 68, 0.1); color: var(--danger); border: none; border-radius: 5px; height: 32px; cursor: pointer; }
+        .btn-del { 
+            background: rgba(255, 23, 68, 0.1); 
+            color: var(--danger); 
+            border: none; 
+            border-radius: 6px; 
+            height: 30px; 
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .dashboard { grid-template-columns: 1fr; }
             .expense-area { grid-column: 1 / -1; }
-            .item-header, .item-row { grid-template-columns: 30px 1fr 40px 1fr 1fr 35px; }
+        }
+
+        @media (max-width: 600px) {
+            .item-header, .item-row { 
+                grid-template-columns: 25px 1.5fr 45px 1fr 1fr 30px; 
+                gap: 4px;
+                font-size: 0.8rem;
+            }
+            .item-row input { font-size: 0.8rem; padding: 5px 2px; }
         }
     </style>
 </head>
@@ -198,7 +231,6 @@
 <div class="dashboard">
     
     <div class="main-control-section">
-        <!-- El details NO tiene el atributo 'open', por lo que inicia minimizado -->
         <details id="det-main-summary">
             <summary>
                 <div class="month-picker" onclick="event.stopPropagation()">
@@ -209,7 +241,7 @@
                         <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
                     </select>
                 </div>
-                <span style="font-size: 0.7rem; color: var(--text-dim);">VER BALANCE ▼</span>
+                <span style="font-size: 0.7rem; color: var(--text-dim); font-weight: 800;">VER BALANCE ▼</span>
             </summary>
             
             <div class="summary-content">
@@ -246,7 +278,7 @@
     <div class="expense-area">
         <details id="det-casa" open>
             <summary>
-                <div>CASA <span style="font-size: 0.7rem; color: var(--text-dim);">Gastos de Vivienda</span></div>
+                <div>CASA <span style="font-size: 0.7rem; color: var(--text-dim); display: block;">Gastos de Vivienda</span></div>
                 <span class="sum-total" id="sum-casa">$ 0</span>
             </summary>
             <div class="details-content">
@@ -262,7 +294,7 @@
     <div class="expense-area">
         <details id="det-local" open>
             <summary>
-                <div>LOCAL <span style="font-size: 0.7rem; color: var(--text-dim);">Gastos de Negocio</span></div>
+                <div>LOCAL <span style="font-size: 0.7rem; color: var(--text-dim); display: block;">Gastos de Negocio</span></div>
                 <span class="sum-total" id="sum-local">$ 0</span>
             </summary>
             <div class="details-content">
@@ -281,6 +313,7 @@
     const currency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 
     function changeMonth() { loadMonthData(document.getElementById('monthSelector').value); }
+    
     function formatAndCalc(input) {
         let val = input.value.replace(/\D/g, "");
         input.value = val ? Number(val).toLocaleString('es-CO') : "";
@@ -292,7 +325,7 @@
         div.className = 'item-row' + (c ? ' is-checked' : '');
         div.innerHTML = `
             <input type="checkbox" class="icheck" ${c ? 'checked' : ''} onchange="toggleCheck(this)">
-            <input type="text" placeholder="..." value="${n}" oninput="save()">
+            <input type="text" placeholder="¿Qué compraste?" value="${n}" oninput="save()">
             <input type="number" value="${q}" class="iqty" oninput="calculate()">
             <input type="text" value="${p}" class="iprice" placeholder="$ 0" oninput="formatAndCalc(this)">
             <input type="text" class="itotal" readonly value="$ 0">
@@ -302,7 +335,10 @@
         calculate();
     }
 
-    function toggleCheck(checkbox) { checkbox.parentElement.classList.toggle('is-checked', checkbox.checked); save(); }
+    function toggleCheck(checkbox) { 
+        checkbox.parentElement.classList.toggle('is-checked', checkbox.checked); 
+        save(); 
+    }
 
     function calculate() {
         const i1 = parse(document.getElementById('income1').value);
@@ -317,7 +353,8 @@
         document.getElementById('stat-egresos').innerText = currency.format(totalExpenses);
         const balanceEl = document.getElementById('stat-saldo');
         balanceEl.innerText = currency.format(balance);
-        balanceEl.className = 'value ' + (balance < 0 ? 'val-negative' : 'val-positive');
+        balanceEl.style.color = balance < 0 ? 'var(--danger)' : 'var(--success)';
+        
         document.getElementById('sum-casa').innerText = currency.format(totalCasa);
         document.getElementById('sum-local').innerText = currency.format(totalLocal);
         save();
