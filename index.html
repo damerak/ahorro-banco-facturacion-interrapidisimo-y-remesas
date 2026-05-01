@@ -28,15 +28,21 @@
             background-color: var(--white);
             display: flex;
             justify-content: center;
-            gap: 5px;
-            padding: 10px;
+            gap: 2px;
+            padding: 8px 5px;
             border-bottom: 1px solid #ddd;
-            flex-wrap: wrap;
+            flex-wrap: nowrap; /* Mantiene todo en una fila */
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow-x: auto; /* Permite scroll horizontal si el espacio es muy pequeño */
+            scrollbar-width: none; /* Oculta scroll en Firefox */
+        }
+
+        nav::-webkit-scrollbar {
+            display: none; /* Oculta scroll en Chrome/Safari */
         }
 
         .nav-btn {
-            padding: 12px 20px;
+            padding: 10px 10px;
             border: none;
             background: none;
             font-weight: bold;
@@ -45,10 +51,11 @@
             border-radius: 5px;
             transition: all 0.3s;
             text-transform: uppercase;
-            font-size: 0.85rem;
+            font-size: 0.72rem; /* Tamaño optimizado */
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
+            white-space: nowrap;
         }
 
         .nav-btn:hover {
@@ -79,27 +86,20 @@
         @media print {
             nav { display: none !important; }
         }
-
-        @media (max-width: 600px) {
-            .nav-btn {
-                padding: 8px 10px;
-                font-size: 0.7rem;
-            }
-        }
     </style>
 </head>
 <body>
 
 <nav id="main-nav">
-    <button class="nav-btn" onclick="loadPage('facturacion.html', this)">📄 Facturación</button>
+    <button class="nav-btn" onclick="loadPage('facturacion.html', this)">📄 Ventas</button>
     <button class="nav-btn active" onclick="loadPage('banco.html', this)">🏦 Banco</button>
     <button class="nav-btn" onclick="loadPage('remesas.html', this)">💸 Remesas</button>
-    <button class="nav-btn" onclick="loadPage('interrapidisimo.html', this)">🚚 Interrapidísimo</button>
+    <button class="nav-btn" onclick="loadPage('interrapidisimo.html', this)">🚚 Mensajeria</button>
     <button class="nav-btn" onclick="loadPage('ahorro.html', this)">💰 Ahorro</button>
-    <!-- Nuevo botón Préstamos -->
     <button class="nav-btn" onclick="loadPage('https://damerak.github.io/misprestamos/', this)">🤝 Préstamos</button>
-    <!-- Botón Otros -->
-    <button class="nav-btn" onclick="loadPage('https://damerak.github.io/gastos-prestamos-cuentas-y-nequi/', this)">🌐 Otros</button>
+    <button class="nav-btn" onclick="loadPage('nequi.html', this)">📲 Nequi</button>
+    <button class="nav-btn" onclick="loadPage('gastos.html', this)">📉 Gastos</button>
+    <button class="nav-btn" onclick="loadPage('cuentas.html', this)">📊 Cuentas</button>
 </nav>
 
 <div id="main-container">
@@ -109,16 +109,12 @@
 <script>
     function loadPage(url, btn) {
         const frame = document.getElementById('content-frame');
-        
-        // Cambiar la URL del iframe
         frame.src = url;
 
-        // Actualizar estado de los botones
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
     }
 
-    // Manejo de errores de carga
     document.getElementById('content-frame').onerror = function() {
         alert("Error al cargar el módulo. Verifica la conexión o el archivo.");
     };
