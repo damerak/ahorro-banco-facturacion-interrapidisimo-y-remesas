@@ -35,7 +35,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        /* Estilos Sección Mensual */
+        /* Estilos Nueva Sección Mensual */
         .monthly-summary {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -53,13 +53,11 @@
         .monthly-header { background-color: var(--dark-blue); color: white; }
         .monthly-value { background-color: white; color: var(--red-text); height: 25px; display: flex; align-items: center; justify-content: center;}
 
-        /* ESTA SECCIÓN HACE QUE TODO EL CABEZAL SEA FIJO */
         .sticky-top {
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 10;
             background: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         .header-grid {
@@ -150,6 +148,7 @@
             font-size: 10px;
         }
 
+        /* ESTILO PARA EL PUNTITO VERDE EN EL CALENDARIO */
         .has-data-dot {
             position: relative;
         }
@@ -169,24 +168,22 @@
 <body>
 
 <div class="corr-container">
-    
-    <!-- CONTENEDOR STICKY QUE INCLUYE AMBAS SECCIONES -->
-    <div class="sticky-top">
-        <!-- SECCIÓN: RESUMEN MENSUAL (Ahora dentro de sticky) -->
-        <div class="monthly-summary">
-            <div class="monthly-cell monthly-header">ENTRADA (Mes)</div>
-            <div class="monthly-cell monthly-header">SALIDA (Mes)</div>
-            <div class="monthly-cell monthly-header">TRX DEPOSITO</div>
-            <div class="monthly-cell monthly-header">TRX RETIRO</div>
-            <div class="monthly-cell monthly-header">TOTAL COMISIÓN</div>
-            
-            <div class="monthly-cell monthly-value" id="m-entrada">$ 0</div>
-            <div class="monthly-cell monthly-value" id="m-salida">$ 0</div>
-            <div class="monthly-cell monthly-value" id="m-trx-dep">0</div>
-            <div class="monthly-cell monthly-value" id="m-trx-ret">0</div>
-            <div class="monthly-cell monthly-value" id="m-total-comision">$ 0</div>
-        </div>
+    <!-- SECCIÓN: RESUMEN MENSUAL -->
+    <div class="monthly-summary">
+        <div class="monthly-cell monthly-header">ENTRADA (Mes)</div>
+        <div class="monthly-cell monthly-header">SALIDA (Mes)</div>
+        <div class="monthly-cell monthly-header">TRX DEPOSITO</div>
+        <div class="monthly-cell monthly-header">TRX RETIRO</div>
+        <div class="monthly-cell monthly-header">TOTAL COMISIÓN</div>
+        
+        <div class="monthly-cell monthly-value" id="m-entrada">$ 0</div>
+        <div class="monthly-cell monthly-value" id="m-salida">$ 0</div>
+        <div class="monthly-cell monthly-value" id="m-trx-dep">0</div>
+        <div class="monthly-cell monthly-value" id="m-trx-ret">0</div>
+        <div class="monthly-cell monthly-value" id="m-total-comision">$ 0</div>
+    </div>
 
+    <div class="sticky-top">
         <div class="header-grid">
             <div class="cell bg-green">Saldo Inicio</div>
             <div class="cell bg-yellow text-red">$ <input type="text" id="saldo-inicio" value="0" oninput="formatAndCalc(this)"></div>
@@ -226,7 +223,6 @@
         </table>
     </div>
 
-    <!-- CUERPO DE LA TABLA (Scrollable) -->
     <table>
         <tbody id="filas-corresponsal"></tbody>
     </table>
@@ -256,8 +252,8 @@
     const inputFecha = document.getElementById('corr-fecha');
     const CUPO_BASE = 5000000;
     
-    let fp; 
-    let fechasConDatos = []; 
+    let fp; // Instancia de Flatpickr
+    let fechasConDatos = []; // Array para guardar qué fechas tienen datos en Firebase
 
     window.onload = function() {
         cargarFechasConDatos();
@@ -355,6 +351,7 @@
                 }
             } else {
                 const saldoArrastrado = buscarUltimoSaldoFinal(fecha);
+                // Usar toLocaleString para mantener el formato visual al cargar arrastrado
                 document.getElementById('saldo-inicio').value = saldoArrastrado.toLocaleString('es-CO');
                 document.getElementById('comp-1').value = "0";
                 document.getElementById('comp-2').value = "0";
@@ -396,6 +393,7 @@
         calcularCorr();
     }
 
+    // MODIFICADO: Permite el signo negativo al inicio
     function formatAndCalc(input) {
         let val = input.value;
         let isNegative = val.startsWith('-');
@@ -410,8 +408,10 @@
         calcularCorr();
     }
 
+    // MODIFICADO: Procesa correctamente el signo negativo
     function parseMoney(str) {
         if (!str || str === "-" || str === "") return 0;
+        // Quitamos los puntos de miles pero mantenemos el signo menos
         let cleanStr = str.toString().replace(/\./g, '').replace(/,/g, '');
         return parseFloat(cleanStr) || 0;
     }
