@@ -146,6 +146,10 @@
                     <label>Pesos a Enviar</label>
                     <input type="text" id="v-envio-pesos" placeholder="0" oninput="formatMoneyInput(this); calcVenezuela()">
                     
+                    <!-- NUEVO APARTADO SOLICITADO -->
+                    <label>Valor en pesos por la tasa del día</label>
+                    <input type="text" id="v-pesos-tasa-dia" readonly style="background-color: #fcfcfc;">
+
                     <div class="grid-2">
                         <div><label>Bolívares</label><input type="text" id="v-bs-llegan" readonly></div>
                         <div><label>Ganancia</label><input type="text" id="v-ganancia" readonly class="highlight-profit"></div>
@@ -310,6 +314,9 @@
                 document.getElementById('v-bs-llegan').value = formatDisp(bs);
                 document.getElementById('v-ganancia').value = formatDisp(ganancia);
                 
+                // ASIGNAR VALOR AL NUEVO CAMPO SOLICITADO
+                document.getElementById('v-pesos-tasa-dia').value = formatDisp(costoPesosTasaDia);
+                
                 const ahora = new Date();
                 document.getElementById('vz-date').innerText = ahora.toLocaleDateString();
                 document.getElementById('vz-time').innerText = ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -317,6 +324,8 @@
                 document.getElementById('vz-tasa').innerText = tVentaLimpia; 
                 document.getElementById('vz-pesos').innerText = formatDisp(ePesos);
                 document.getElementById('vz-bs').innerText = formatDisp(bs);
+            } else {
+                document.getElementById('v-pesos-tasa-dia').value = "";
             }
         }
 
