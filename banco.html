@@ -1,3 +1,5 @@
+--- START OF FILE banco.html ---
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -310,26 +312,69 @@
         return parseFloat(cleanStr) || 0;
     }
 
+    // Nueva función auxiliar para calcular el saldo final de un objeto de datos
+    function calcularSaldoFinalDeData(data) {
+        if (!data) return 0;
+        let saldo = parseMoney(data.saldoInicio);
+        const comp1 = parseMoney(data.comp1);
+        const comp2 = parseMoney(data.comp2);
+        if (data.filas) {
+            data.filas.forEach(f => {
+                const val = parseMoney(f.valor);
+                if (f.tipo === "Retiro") saldo -= val;
+                else if (f.tipo === "Deposito") saldo += val;
+            });
+        }
+        return saldo - (comp1 + comp2);
+    }
+
     function initCorresponsal() {
         tablaCorr.innerHTML = '';
-        const fecha = inputFecha.value;
-        if(!fecha) return;
+        const fechaSeleccionada = inputFecha.value;
+        if(!fechaSeleccionada) return;
 
-        db.ref('banco/' + fecha).once('value', (snapshot) => {
+        db.ref('banco/' + fechaSeleccionada).once('value', (snapshot) => {
             const savedData = snapshot.val();
+            
             if (savedData) {
+                // Si ya existen datos para este día, los cargamos normalmente
                 document.getElementById('saldo-inicio').value = savedData.saldoInicio || "0";
                 document.getElementById('comp-1').value = savedData.comp1 || "0";
                 document.getElementById('comp-2').value = savedData.comp2 || "0";
                 if (savedData.filas) savedData.filas.forEach(f => crearFilaCorr(f.tipo, f.valor));
+                crearFilaCorr(); 
+                calcularCorr();
+                calcularResumenMensual();
             } else {
-                document.getElementById('saldo-inicio').value = "0";
-                document.getElementById('comp-1').value = "0";
-                document.getElementById('comp-2').value = "0";
+                // Si NO existen datos, buscamos el saldo final del día anterior registrado
+                // Ordenamos las fechas existentes de forma descendente que sean menores a la actual
+                const fechasAnteriores = fechasConDatos
+                    .filter(f => f < fechaSeleccionada)
+                    .sort((a, b) => b.localeCompare(a));
+
+                if (fechasAnteriores.length > 0) {
+                    const ultimaFecha = fechasAnteriores[0];
+                    db.ref('banco/' + ultimaFecha).once('value', (snapPrev) => {
+                        const dataPrev = snapPrev.val();
+                        const saldoFinalPrev = calcularSaldoFinalDeData(dataPrev);
+                        
+                        document.getElementById('saldo-inicio').value = saldoFinalPrev.toLocaleString('es-CO');
+                        document.getElementById('comp-1').value = "0";
+                        document.getElementById('comp-2').value = "0";
+                        crearFilaCorr(); 
+                        calcularCorr();
+                        calcularResumenMensual();
+                    });
+                } else {
+                    // No hay días anteriores registrados
+                    document.getElementById('saldo-inicio').value = "0";
+                    document.getElementById('comp-1').value = "0";
+                    document.getElementById('comp-2').value = "0";
+                    crearFilaCorr(); 
+                    calcularCorr();
+                    calcularResumenMensual();
+                }
             }
-            crearFilaCorr(); 
-            calcularCorr();
-            calcularResumenMensual();
         });
     }
 
