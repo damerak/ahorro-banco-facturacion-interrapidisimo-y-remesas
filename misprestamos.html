@@ -166,6 +166,21 @@
             margin-left: 4px;
         }
 
+        /* Estilo para el input de fecha */
+        .day-date {
+            margin-top: 10px;
+            background: #2c2c2c;
+            border: 1px solid #444;
+            color: #fff;
+            font-size: 0.75rem;
+            padding: 4px;
+            border-radius: 6px;
+            outline: none;
+            width: 90%;
+            text-align: center;
+            color-scheme: dark; /* Ayuda a que el picker sea oscuro en navegadores modernos */
+        }
+
         input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-color); margin: 0; }
         .pending-check { accent-color: var(--box-pending-neon) !important; }
 
@@ -234,14 +249,13 @@
             style: 'currency', currency: 'COP', minimumFractionDigits: 0
         });
 
-        // Esta función se llama solo cuando el usuario escribe manualmente
         function handleManualInput(el) {
             if (el && el.id === 'input-prestado') {
                 let val = el.value.replace(/\D/g, "");
                 el.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             }
             rebuildGrid();
-            saveData(); // Guardar cambios de configuración
+            saveData();
         }
 
         function getPrestadoValue() {
@@ -275,6 +289,7 @@
                         <span class="p-label">P.</span>
                         <input type="checkbox" class="pending-check" id="pend-${i}" onchange="toggleStatus(${i}, 'pending')">
                     </div>
+                    <input type="date" class="day-date" id="date-${i}" onchange="saveData()">
                 `;
                 grid.appendChild(card);
             }
@@ -304,7 +319,7 @@
             }
 
             updateTotal();
-            saveData(); // Guardar el estado de los checks
+            saveData();
         }
 
         function updateTotal() {
@@ -325,9 +340,11 @@
             for (let i = 1; i <= dias; i++) {
                 const p = document.getElementById(`check-${i}`);
                 const n = document.getElementById(`pend-${i}`);
+                const d = document.getElementById(`date-${i}`);
                 data.checks.push({
                     p: p ? p.checked : false,
-                    n: n ? n.checked : false
+                    n: n ? n.checked : false,
+                    date: d ? d.value : ""
                 });
             }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -337,31 +354,30 @@
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
                 const data = JSON.parse(saved);
-                // 1. Restaurar valores de inputs
                 inputPrestado.value = data.prestado;
                 inputPorcentaje.value = data.porcentaje;
                 inputDias.value = data.dias;
                 
-                // 2. Dibujar la cuadrícula basándose en esos valores
                 rebuildGrid(); 
 
-                // 3. Restaurar los estados de los checks guardados
                 data.checks.forEach((state, index) => {
                     const id = index + 1;
                     const card = document.getElementById(`card-${id}`);
                     const cP = document.getElementById(`check-${id}`);
                     const cN = document.getElementById(`pend-${id}`);
+                    const cD = document.getElementById(`date-${id}`);
                     
-                    if (cP && cN && card) {
-                        cP.checked = state.p; 
-                        cN.checked = state.n;
+                    if (card) {
+                        if (cP) cP.checked = state.p; 
+                        if (cN) cN.checked = state.n;
+                        if (cD) cD.value = state.date || "";
+                        
                         if (state.p) card.classList.add('checked');
                         if (state.n) card.classList.add('is-pending');
                     }
                 });
                 updateTotal();
             } else {
-                // Configuración inicial por defecto
                 inputPrestado.value = "2.000.000";
                 rebuildGrid();
             }
@@ -374,7 +390,6 @@
             }
         }
 
-        // Ejecutar carga al abrir la página
         loadData();
     </script>
 </body>
