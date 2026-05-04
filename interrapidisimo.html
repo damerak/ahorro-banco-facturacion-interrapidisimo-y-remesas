@@ -89,6 +89,16 @@
             outline: none; background: transparent; 
         }
 
+        /* --- QUITAR FLECHAS (SCROLL) DE INPUTS NUMERICOS --- */
+        #view-inter input[type=number]::-webkit-inner-spin-button, 
+        #view-inter input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        #view-inter input[type=number] {
+            -moz-appearance: textfield;
+        }
+
         #view-inter .footer-summary-inter {
             margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%;
         }
