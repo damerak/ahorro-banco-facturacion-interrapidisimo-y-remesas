@@ -11,7 +11,7 @@
             --primary: #1a73e8;
             --green-excel: #008001;
             --yellow-excel: #FFFF00;
-            --cyan-excel: #00FFFF;
+            --cyan-excel: #00FFFF; /* Color de Compensaciones */
             --gray-row: #D9D9D9;
             --red-text: #FF0000;
             --dark-blue: #00008B;
@@ -102,7 +102,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* Mantiene las columnas alineadas */
+            table-layout: fixed;
         }
 
         thead th {
@@ -119,9 +119,17 @@
             background-color: var(--gray-row);
             padding: 0;
             height: 35px;
+            transition: background-color 0.2s;
         }
 
-        /* Estilo original del selector */
+        /* CLASES DE COLORES PARA LAS FILAS */
+        tr.row-retiro td {
+            background-color: var(--cyan-excel) !important; /* Mismo color que Compensaciones */
+        }
+        tr.row-deposito td {
+            background-color: var(--yellow-excel) !important; /* Amarillo */
+        }
+
         select {
             width: 100%;
             height: 100%;
@@ -131,7 +139,7 @@
             padding: 0 5px;
             cursor: pointer;
             font-size: 13px;
-            appearance: none; /* Quita la flecha nativa en algunos navegadores si se desea */
+            appearance: none;
         }
 
         .input-valor {
@@ -186,9 +194,7 @@
 
 <div class="corr-container">
     
-    <!-- CONTENEDOR TODO FIJO -->
     <div class="sticky-top-container">
-        <!-- SECCIÓN: RESUMEN MENSUAL -->
         <div class="monthly-summary">
             <div class="monthly-cell monthly-header">ENTRADA (Mes)</div>
             <div class="monthly-cell monthly-header">SALIDA (Mes)</div>
@@ -203,7 +209,6 @@
             <div class="monthly-cell monthly-value" id="m-total-comision">$ 0</div>
         </div>
 
-        <!-- SECCIÓN: GRILLA DE ENTRADA -->
         <div class="header-grid">
             <div class="cell bg-green">Saldo Inicio</div>
             <div class="cell bg-yellow text-red">$ <input type="text" id="saldo-inicio" value="0" oninput="formatAndCalc(this)"></div>
@@ -217,7 +222,7 @@
             <div class="cell bg-yellow">Deposito</div>
             <div class="cell bg-yellow text-red">$ <span id="resumen-deposito">0</span></div>
 
-            <div class="cell bg-green text-red" style="font-size: 11px;">Cupo Disponible</div>
+            <div class="cell bg-green" style="font-size: 11px;">Cupo Disponible</div>
             <div class="cell bg-yellow text-red">$ <input type="text" id="cupo" value="0" readonly></div>
             <div class="cell bg-yellow text-red">$ <input type="text" id="comp-1" value="0" oninput="formatAndCalc(this)"></div>
             <div class="cell bg-yellow">Retiro</div>
@@ -230,7 +235,6 @@
             <div class="cell bg-yellow"><input type="text" id="corr-fecha" placeholder="Seleccione fecha" readonly></div>
         </div>
 
-        <!-- CABECERA DE TABLA -->
         <table>
             <thead>
                 <tr>
@@ -242,7 +246,6 @@
         </table>
     </div>
 
-    <!-- CUERPO DE TABLA (SCROLLABLE) -->
     <table>
         <tbody id="filas-corresponsal"></tbody>
     </table>
@@ -310,7 +313,6 @@
         return parseFloat(cleanStr) || 0;
     }
 
-    // Nueva función auxiliar para calcular el saldo final de un objeto de datos
     function calcularSaldoFinalDeData(data) {
         if (!data) return 0;
         let saldo = parseMoney(data.saldoInicio);
@@ -335,7 +337,6 @@
             const savedData = snapshot.val();
             
             if (savedData) {
-                // Si ya existen datos para este día, los cargamos normalmente
                 document.getElementById('saldo-inicio').value = savedData.saldoInicio || "0";
                 document.getElementById('comp-1').value = savedData.comp1 || "0";
                 document.getElementById('comp-2').value = savedData.comp2 || "0";
@@ -344,8 +345,6 @@
                 calcularCorr();
                 calcularResumenMensual();
             } else {
-                // Si NO existen datos, buscamos el saldo final del día anterior registrado
-                // Ordenamos las fechas existentes de forma descendente que sean menores a la actual
                 const fechasAnteriores = fechasConDatos
                     .filter(f => f < fechaSeleccionada)
                     .sort((a, b) => b.localeCompare(a));
@@ -355,7 +354,6 @@
                     db.ref('banco/' + ultimaFecha).once('value', (snapPrev) => {
                         const dataPrev = snapPrev.val();
                         const saldoFinalPrev = calcularSaldoFinalDeData(dataPrev);
-                        
                         document.getElementById('saldo-inicio').value = saldoFinalPrev.toLocaleString('es-CO');
                         document.getElementById('comp-1').value = "0";
                         document.getElementById('comp-2').value = "0";
@@ -364,7 +362,6 @@
                         calcularResumenMensual();
                     });
                 } else {
-                    // No hay días anteriores registrados
                     document.getElementById('saldo-inicio').value = "0";
                     document.getElementById('comp-1').value = "0";
                     document.getElementById('comp-2').value = "0";
@@ -378,6 +375,11 @@
 
     function crearFilaCorr(tipo = "", valor = "") {
         let tr = document.createElement('tr');
+        
+        // Aplicar clase de color inicial si ya viene con tipo (al cargar datos guardados)
+        if (tipo === "Retiro") tr.classList.add('row-retiro');
+        else if (tipo === "Deposito") tr.classList.add('row-deposito');
+
         tr.innerHTML = `
             <td style="width: 35%;">
                 <select class="select-exp" onchange="handleRowChange(this)">
@@ -395,11 +397,23 @@
     }
 
     function handleRowChange(element) {
+        const filaActual = element.closest('tr');
+
+        // Manejar el color de fondo basado en el select
+        if (element.classList.contains('select-exp')) {
+            filaActual.classList.remove('row-retiro', 'row-deposito');
+            if (element.value === "Retiro") {
+                filaActual.classList.add('row-retiro');
+            } else if (element.value === "Deposito") {
+                filaActual.classList.add('row-deposito');
+            }
+        }
+
         if (element.classList.contains('input-valor')) {
             let val = element.value.replace(/\D/g, "");
             element.value = val === "" ? "" : Number(val).toLocaleString('es-CO');
         }
-        const filaActual = element.closest('tr');
+        
         if (!filaActual.nextElementSibling) {
             const tipo = filaActual.querySelector('.select-exp').value;
             const valor = filaActual.querySelector('.input-valor').value;
