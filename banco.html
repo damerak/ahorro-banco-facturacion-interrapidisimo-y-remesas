@@ -11,7 +11,7 @@
             --primary: #1a73e8;
             --green-excel: #008001;
             --yellow-excel: #FFFF00;
-            --cyan-excel: #00FFFF; /* Color de Compensaciones */
+            --cyan-excel: #00FFFF;
             --gray-row: #D9D9D9;
             --red-text: #FF0000;
             --dark-blue: #00008B;
@@ -35,7 +35,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        /* CONTENEDOR ESTÁTICO (SUPERIOR FIJO) */
         .sticky-top-container {
             position: sticky;
             top: 0;
@@ -84,6 +83,30 @@
             align-items: center;
         }
 
+        /* Estilos para las sub-secciones de transacciones */
+        .trx-sub-label {
+            background-color: black;
+            color: white;
+            font-size: 9px;
+            flex: 1;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid white;
+        }
+        .trx-sub-value {
+            background-color: var(--yellow-excel);
+            color: black;
+            font-size: 11px;
+            flex: 1;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid black;
+        }
+
         .bg-green { background-color: var(--green-excel); color: white; }
         .bg-yellow { background-color: var(--yellow-excel); color: black; }
         .bg-cyan { background-color: var(--cyan-excel); color: black; }
@@ -122,13 +145,8 @@
             transition: background-color 0.2s;
         }
 
-        /* CLASES DE COLORES PARA LAS FILAS */
-        tr.row-retiro td {
-            background-color: var(--cyan-excel) !important; /* Mismo color que Compensaciones */
-        }
-        tr.row-deposito td {
-            background-color: var(--yellow-excel) !important; /* Amarillo */
-        }
+        tr.row-retiro td { background-color: var(--cyan-excel) !important; }
+        tr.row-deposito td { background-color: var(--yellow-excel) !important; }
 
         select {
             width: 100%;
@@ -213,8 +231,16 @@
             <div class="cell bg-green">Saldo Inicio</div>
             <div class="cell bg-yellow text-red">$ <input type="text" id="saldo-inicio" value="0" oninput="formatAndCalc(this)"></div>
             <div class="cell"><button class="btn-borrar-corr" onclick="resetCorresponsal()">Borrar Día</button></div>
-            <div class="cell bg-black">Transacciones</div>
-            <div class="cell bg-yellow" style="justify-content: center;" id="total-trans">0</div>
+            
+            <!-- SECCIÓN MODIFICADA: 6 SECCIONES HORIZONTALES -->
+            <div class="cell" style="grid-column: span 2; padding: 0; display: flex; border: 1px solid black;">
+                <div class="trx-sub-label">TRX DEP</div>
+                <div class="trx-sub-value" id="count-dep">0</div>
+                <div class="trx-sub-label">TRX RET</div>
+                <div class="trx-sub-value" id="count-ret">0</div>
+                <div class="trx-sub-label">TOTAL</div>
+                <div class="trx-sub-value" style="border-right: none;" id="total-trans">0</div>
+            </div>
 
             <div class="cell bg-green">Saldo</div>
             <div class="cell bg-yellow text-red">$ <span id="resumen-saldo">0</span></div>
@@ -251,7 +277,6 @@
     </table>
 </div>
 
-<!-- FIREBASE SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -375,8 +400,6 @@
 
     function crearFilaCorr(tipo = "", valor = "") {
         let tr = document.createElement('tr');
-        
-        // Aplicar clase de color inicial si ya viene con tipo (al cargar datos guardados)
         if (tipo === "Retiro") tr.classList.add('row-retiro');
         else if (tipo === "Deposito") tr.classList.add('row-deposito');
 
@@ -398,22 +421,15 @@
 
     function handleRowChange(element) {
         const filaActual = element.closest('tr');
-
-        // Manejar el color de fondo basado en el select
         if (element.classList.contains('select-exp')) {
             filaActual.classList.remove('row-retiro', 'row-deposito');
-            if (element.value === "Retiro") {
-                filaActual.classList.add('row-retiro');
-            } else if (element.value === "Deposito") {
-                filaActual.classList.add('row-deposito');
-            }
+            if (element.value === "Retiro") filaActual.classList.add('row-retiro');
+            else if (element.value === "Deposito") filaActual.classList.add('row-deposito');
         }
-
         if (element.classList.contains('input-valor')) {
             let val = element.value.replace(/\D/g, "");
             element.value = val === "" ? "" : Number(val).toLocaleString('es-CO');
         }
-        
         if (!filaActual.nextElementSibling) {
             const tipo = filaActual.querySelector('.select-exp').value;
             const valor = filaActual.querySelector('.input-valor').value;
@@ -436,7 +452,8 @@
         const totalCompensacion = comp1 + comp2;
 
         let currentSaldoAcumulado = saldoInicioBase;
-        let sumaRetiros = 0, sumaDepositos = 0, contadorTrans = 0;
+        let sumaRetiros = 0, sumaDepositos = 0;
+        let cDep = 0, cRet = 0;
 
         const filas = Array.from(tablaCorr.querySelectorAll('tr'));
         filas.forEach((fila, index) => {
@@ -445,9 +462,16 @@
             const displaySaldoFila = fila.querySelector('.td-saldo span');
 
             if (tipo && valorNum > 0) {
-                contadorTrans++;
-                if (tipo === "Retiro") { currentSaldoAcumulado -= valorNum; sumaRetiros += valorNum; } 
-                else if (tipo === "Deposito") { currentSaldoAcumulado += valorNum; sumaDepositos += valorNum; }
+                if (tipo === "Retiro") { 
+                    currentSaldoAcumulado -= valorNum; 
+                    sumaRetiros += valorNum; 
+                    cRet++;
+                } 
+                else if (tipo === "Deposito") { 
+                    currentSaldoAcumulado += valorNum; 
+                    sumaDepositos += valorNum; 
+                    cDep++;
+                }
             }
             let saldoFila = (index === filas.length - 1) ? currentSaldoAcumulado - totalCompensacion : currentSaldoAcumulado;
             displaySaldoFila.innerText = saldoFila.toLocaleString('es-CO');
@@ -457,7 +481,12 @@
         document.getElementById('resumen-efectivo').innerText = (currentSaldoAcumulado - totalCompensacion).toLocaleString('es-CO');
         document.getElementById('resumen-retiro').innerText = sumaRetiros.toLocaleString('es-CO');
         document.getElementById('resumen-deposito').innerText = sumaDepositos.toLocaleString('es-CO');
-        document.getElementById('total-trans').innerText = contadorTrans;
+        
+        // Actualizar contadores TRX
+        document.getElementById('count-dep').innerText = cDep;
+        document.getElementById('count-ret').innerText = cRet;
+        document.getElementById('total-trans').innerText = cDep + cRet;
+
         document.getElementById('cupo').value = (CUPO_BASE - (currentSaldoAcumulado - totalCompensacion)).toLocaleString('es-CO');
         saveData();
     }
