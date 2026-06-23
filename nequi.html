@@ -15,11 +15,12 @@
             --row-red: rgba(239, 68, 68, 0.3);
             --key-color: #fbbf24;
             --int-color: #a855f7;
-            --banco-color: #f97316; /* Color naranja para Banco */
+            --banco-color: #f97316;
+            --daviplata-color: #e11d48; /* Color para Daviplata */
             --cuota-color: #22c55e;
         }
 
-        * { box-spacing: border-box; }
+        * { box-sizing: border-box; }
 
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -47,28 +48,29 @@
 
         .totals-group {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             align-items: center;
             flex-wrap: wrap;
         }
 
         .total-container {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             display: flex;
             align-items: center;
         }
 
-        .main-total { font-size: 1.5rem; }
+        .main-total { font-size: 1.3rem; }
         
-        .total-amount { color: var(--primary-color); margin-left: 8px; }
+        .total-amount { color: var(--primary-color); margin-left: 6px; }
         .amount-llave { color: var(--key-color); }
         .amount-int { color: var(--int-color); }
         .amount-banco { color: var(--banco-color); }
+        .amount-daviplata { color: var(--daviplata-color); }
         .amount-cuota { color: var(--cuota-color); }
 
         .label-small {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             opacity: 0.8;
             margin-right: 4px;
             text-transform: uppercase;
@@ -109,10 +111,10 @@
         th {
             background-color: rgba(15, 23, 42, 0.5);
             color: var(--primary-color);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            padding: 8px;
+            padding: 8px 4px;
             border-bottom: 2px solid var(--border-color);
         }
 
@@ -133,7 +135,7 @@
             border-radius: 4px;
             text-align: right;
             font-family: 'Courier New', monospace;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         input[type="text"]:focus {
@@ -142,8 +144,8 @@
         }
 
         input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 17px;
+            height: 17px;
             cursor: pointer;
             accent-color: var(--primary-color);
         }
@@ -182,6 +184,10 @@
                 <span id="totalBanco" class="total-amount amount-banco">$ 0</span>
             </div>
             <div class="total-container">
+                <span class="label-small">DAVI:</span>
+                <span id="totalDaviplata" class="total-amount amount-daviplata">$ 0</span>
+            </div>
+            <div class="total-container">
                 <span class="label-small">CUOTA:</span>
                 <span id="totalCuota" class="total-amount amount-cuota">$ 0</span>
             </div>
@@ -193,12 +199,13 @@
         <table id="table1">
             <thead>
                 <tr>
-                    <th style="width: 30%;">VALOR</th>
+                    <th style="width: 25%;">VALOR</th>
                     <th>LLAVE</th>
                     <th>INTER</th>
                     <th>BANCO</th>
+                    <th>DAVI</th>
                     <th>CUOTA</th>
-                    <th style="width: 40px;">🚩</th>
+                    <th style="width: 35px;">🚩</th>
                 </tr>
             </thead>
             <tbody id="tbody1"></tbody>
@@ -207,12 +214,13 @@
         <table id="table2">
             <thead>
                 <tr>
-                    <th style="width: 30%;">VALOR</th>
+                    <th style="width: 25%;">VALOR</th>
                     <th>LLAVE</th>
                     <th>INTER</th>
                     <th>BANCO</th>
+                    <th>DAVI</th>
                     <th>CUOTA</th>
-                    <th style="width: 40px;">🚩</th>
+                    <th style="width: 35px;">🚩</th>
                 </tr>
             </thead>
             <tbody id="tbody2"></tbody>
@@ -234,6 +242,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><input type="text" class="input-money" oninput="handleMoneyInput(this)"></td>
+                    <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
                     <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
                     <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
                     <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
@@ -268,6 +277,7 @@
             let totalLlave = 0;
             let totalInt = 0;
             let totalBanco = 0;
+            let totalDaviplata = 0;
             let totalCuota = 0;
 
             document.querySelectorAll('tbody tr').forEach(tr => {
@@ -278,14 +288,16 @@
                 const isLlave = checks[0].checked;
                 const isInt = checks[1].checked;
                 const isBanco = checks[2].checked;
-                const isCuota = checks[3].checked;
-                const isRed = checks[4].checked; // El quinto check es el rojo (bandera)
+                const isDaviplata = checks[3].checked;
+                const isCuota = checks[4].checked;
+                const isRed = checks[5].checked; // El sexto check es el rojo (bandera)
 
                 if (!isRed) {
                     totalGeneral += valor;
                     if (isLlave) totalLlave += valor;
                     if (isInt) totalInt += valor;
                     if (isBanco) totalBanco += valor;
+                    if (isDaviplata) totalDaviplata += valor;
                     if (isCuota) totalCuota += valor;
                 }
             });
@@ -295,6 +307,7 @@
             document.getElementById('totalLlave').innerText = "$ " + formatter.format(totalLlave);
             document.getElementById('totalInt').innerText = "$ " + formatter.format(totalInt);
             document.getElementById('totalBanco').innerText = "$ " + formatter.format(totalBanco);
+            document.getElementById('totalDaviplata').innerText = "$ " + formatter.format(totalDaviplata);
             document.getElementById('totalCuota').innerText = "$ " + formatter.format(totalCuota);
         }
 
@@ -305,11 +318,11 @@
                 const checks = Array.from(tr.querySelectorAll('.chk')).map(c => c.checked);
                 allData.push({ money, checks });
             });
-            localStorage.setItem('tablaDataSave_v2', JSON.stringify(allData));
+            localStorage.setItem('tablaDataSave_v3', JSON.stringify(allData));
         }
 
         function loadFromStorage() {
-            const saved = localStorage.getItem('tablaDataSave_v2');
+            const saved = localStorage.getItem('tablaDataSave_v3');
             if (!saved) return;
             const data = JSON.parse(saved);
             const rows = document.querySelectorAll('tbody tr');
@@ -323,8 +336,8 @@
                         item.checks.forEach((isChecked, i) => {
                             if (checks[i]) {
                                 checks[i].checked = isChecked;
-                                // El índice 4 es el check rojo en esta nueva versión
-                                if (i === 4 && isChecked) tr.classList.add('row-red');
+                                // El índice 5 es el check rojo en esta versión
+                                if (i === 5 && isChecked) tr.classList.add('row-red');
                             }
                         });
                     }
@@ -335,7 +348,7 @@
 
         function clearAll() {
             if (confirm("¿Estás seguro de borrar todos los datos?")) {
-                localStorage.removeItem('tablaDataSave_v2');
+                localStorage.removeItem('tablaDataSave_v3');
                 location.reload();
             }
         }
