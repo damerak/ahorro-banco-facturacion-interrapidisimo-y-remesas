@@ -24,26 +24,26 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        .container { width: 100%; max-width: 1200px; margin-top: 20px; padding-bottom: 80px; }
+        .container { width: 100%; max-width: 1200px; margin-top: 20px; padding-bottom: 100px; }
 
         /* BOTÓN FLOTANTE INFERIOR DERECHA (+) */
         .fab-add {
             position: fixed;
             bottom: 30px;
             right: 30px;
-            width: 60px;
-            height: 60px;
+            width: 65px;
+            height: 65px;
             background-color: var(--accent-purple);
             color: white;
             border-radius: 50%;
             border: none;
-            font-size: 30px;
+            font-size: 35px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
             z-index: 1000;
             transition: transform 0.2s, background-color 0.2s;
         }
@@ -60,7 +60,6 @@
             gap: 20px; width: 100%;
         }
 
-        /* TARJETA ESTILO IRUSAGA */
         .card {
             background: var(--card-bg); border: 1px solid var(--border);
             border-radius: 15px; padding: 20px; position: relative;
@@ -86,16 +85,14 @@
         .val-ahorro { color: var(--accent-green); }
         .val-restante { color: var(--accent-purple); }
 
-        /* BOTÓN X ELIMINAR */
         .btn-delete-x {
             background: none; border: none; color: var(--accent-red);
-            font-size: 1.5rem; font-weight: bold; cursor: pointer;
-            padding: 0 0 0 10px; line-height: 1; transition: transform 0.2s;
-            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: bold; cursor: pointer;
+            padding: 0 0 0 10px; line-height: 1; display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
         }
         .btn-delete-x:hover { transform: scale(1.2); }
 
-        /* BOTONES ACCIÓN */
         .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .btn {
             flex: 1; padding: 12px; border: none; border-radius: 6px;
@@ -106,7 +103,6 @@
         .btn-clear { background: var(--accent-red); }
         .btn-save { background: var(--accent-green); }
 
-        /* DESPLEGABLE */
         .collapse-trigger {
             width: 100%; background: rgba(255,255,255,0.05);
             border: none; color: var(--text-gray); padding: 8px;
@@ -118,9 +114,8 @@
             max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;
             background: rgba(0,0,0,0.2); border-radius: 8px;
         }
-        .collapse-content.open { max-height: 2000px; padding: 10px; border: 1px solid var(--border); }
+        .collapse-content.open { max-height: 2500px; padding: 10px; border: 1px solid var(--border); }
 
-        /* TABLA DE CUADRITOS */
         .savings-table { width: 100%; border-collapse: collapse; }
         .savings-table td {
             border: 1px solid var(--border); padding: 12px 5px;
@@ -146,13 +141,12 @@
         @media (max-width: 500px) {
             .challenges-grid { grid-template-columns: 1fr; }
             .totals-section { gap: 10px; }
-            .fab-add { width: 50px; height: 50px; bottom: 20px; right: 20px; }
+            .fab-add { width: 55px; height: 55px; bottom: 20px; right: 20px; font-size: 28px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- BOTÓN + FLOTANTE -->
     <button class="fab-add" onclick="addNewChallenge()" title="Añadir Nuevo Reto">+</button>
 
     <div class="container">
@@ -178,13 +172,12 @@
     let challengeIds = [];
     let editingState = {};
 
-    window.onload = () => {
-        db.ref('ahorros_v4').on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            challengeIds = data.challengeIds || [1, 2];
-            renderAll();
-        });
-    };
+    db.ref('ahorros_v4').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        let rawIds = data.challengeIds || [];
+        challengeIds = Array.isArray(rawIds) ? rawIds : Object.values(rawIds);
+        renderAll();
+    });
 
     function formatNumber(num) {
         return new Intl.NumberFormat('de-DE').format(num);
@@ -197,6 +190,7 @@
     function renderAll() {
         const grid = document.getElementById('main-grid');
         const currentOpenStates = {};
+        
         challengeIds.forEach(id => {
             const el = document.getElementById(`collapse-${id}`);
             if(el) currentOpenStates[id] = el.classList.contains('open');
@@ -261,14 +255,16 @@
 
     function refreshUI(id) {
         const name = localStorage.getItem(`name_${id}`);
-        const values = JSON.parse(localStorage.getItem(`vals_${id}`));
+        const values = JSON.parse(localStorage.getItem(`vals_${id}`)) || [0];
         const isEditing = editingState[id];
 
         const titleCont = document.getElementById(`title-cont-${id}`);
-        if(isEditing) {
-            titleCont.innerHTML = `<input type="text" id="in-name-${id}" class="input-title" value="${name}">`;
-        } else {
-            titleCont.innerHTML = `<h2 class="challenge-name">${name}</h2><span class="challenge-sub">Reto Personalizado</span>`;
+        if(titleCont) {
+            if(isEditing) {
+                titleCont.innerHTML = `<input type="text" id="in-name-${id}" class="input-title" value="${name}">`;
+            } else {
+                titleCont.innerHTML = `<h2 class="challenge-name">${name}</h2><span class="challenge-sub">Reto Personalizado</span>`;
+            }
         }
 
         renderTable(id, values, isEditing);
@@ -277,6 +273,7 @@
 
     function renderTable(id, values, isEditing) {
         const table = document.getElementById(`table-${id}`);
+        if(!table) return;
         const saved = JSON.parse(localStorage.getItem(`save_${id}`)) || [];
         table.innerHTML = '';
         let row;
@@ -328,7 +325,8 @@
     }
 
     function toggleCollapse(id) {
-        document.getElementById(`collapse-${id}`).classList.toggle('open');
+        const coll = document.getElementById(`collapse-${id}`);
+        if(coll) coll.classList.toggle('open');
     }
 
     function toggleCheck(id, idx) {
@@ -373,7 +371,6 @@
         
         editingState[id] = false;
         saveToFirebase(id);
-        renderAll();
     }
 
     function saveToFirebase(id) {
@@ -387,11 +384,12 @@
     }
 
     function addNewChallenge() {
-        const id = Date.now();
-        challengeIds.push(id);
-        const data = { name: "NUEVO RETO", values: [0,0,0], saved: [] };
-        db.ref(`ahorros_v4/data_${id}`).set(data).then(() => {
-            db.ref(`ahorros_v4/challengeIds`).set(challengeIds);
+        const newId = Date.now();
+        const updatedIds = [...challengeIds, newId];
+        const newData = { name: "NUEVO RETO", values: [0,0,0], saved: [] };
+
+        db.ref(`ahorros_v4/data_${newId}`).set(newData).then(() => {
+            db.ref(`ahorros_v4/challengeIds`).set(updatedIds);
         });
     }
 
@@ -403,12 +401,12 @@
         }
     }
 
+    // ELIMINACIÓN DIRECTA SIN CONFIRMACIÓN
     function deleteChallenge(id) {
-        if(confirm("¿Eliminar este reto permanentemente?")) {
-            challengeIds = challengeIds.filter(i => i !== id);
-            db.ref(`ahorros_v4/data_${id}`).remove();
-            db.ref(`ahorros_v4/challengeIds`).set(challengeIds);
-        }
+        const updatedIds = challengeIds.filter(i => i !== id);
+        db.ref(`ahorros_v4/data_${id}`).remove().then(() => {
+            db.ref(`ahorros_v4/challengeIds`).set(updatedIds);
+        });
     }
 </script>
 </body>
