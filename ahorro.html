@@ -24,12 +24,7 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        .container { width: 100%; max-width: 1200px; }
-
-        h1.main-title {
-            color: white; text-transform: uppercase; letter-spacing: 2px;
-            margin-bottom: 20px; font-size: 1.5rem;
-        }
+        .container { width: 100%; max-width: 1200px; margin-top: 20px; }
 
         /* BOTÓN AGREGAR NUEVO */
         .btn-add-main {
@@ -41,7 +36,7 @@
         .btn-add-main:hover { background: rgba(130, 87, 229, 0.1); }
 
         .challenges-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 20px; width: 100%;
         }
 
@@ -56,7 +51,7 @@
             margin-bottom: 15px;
         }
 
-        .title-section { display: flex; flex-direction: column; }
+        .title-section { display: flex; flex-direction: column; flex: 1; }
         .challenge-name { 
             color: white; font-weight: bold; font-size: 1.1rem; 
             text-transform: uppercase; margin: 0;
@@ -73,7 +68,7 @@
         /* BOTONES ACCIÓN */
         .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .btn {
-            flex: 1; padding: 10px; border: none; border-radius: 6px;
+            flex: 1; padding: 12px; border: none; border-radius: 6px;
             font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.7rem;
             color: white;
         }
@@ -93,14 +88,14 @@
             max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;
             background: rgba(0,0,0,0.2); border-radius: 8px;
         }
-        .collapse-content.open { max-height: 1000px; padding: 10px; border: 1px solid var(--border); }
+        .collapse-content.open { max-height: 2000px; padding: 10px; border: 1px solid var(--border); }
 
         /* TABLA DE CUADRITOS */
         .savings-table { width: 100%; border-collapse: collapse; }
         .savings-table td {
             border: 1px solid var(--border); padding: 12px 5px;
             text-align: center; cursor: pointer; font-weight: bold; color: var(--text-gray);
-            font-size: 0.9rem;
+            font-size: 0.9rem; width: 33.33%;
         }
         .cell-selected {
             background-color: rgba(52, 168, 83, 0.2) !important;
@@ -110,12 +105,12 @@
 
         .input-edit {
             background: #000; border: 1px solid var(--accent-blue);
-            color: white; width: 80%; text-align: center; padding: 5px;
+            color: white; width: 85%; text-align: center; padding: 5px; border-radius: 4px;
         }
 
         .input-title {
             background: transparent; border: 1px dashed var(--accent-purple);
-            color: white; font-weight: bold; width: 150px;
+            color: white; font-weight: bold; width: 90%; padding: 5px;
         }
 
         @media (max-width: 500px) {
@@ -124,13 +119,11 @@
     </style>
 </head>
 <body>
-    
+
     <button class="btn-add-main" onclick="addNewChallenge()">+ NUEVO RETO DE AHORRO</button>
 
     <div class="container">
-        <div class="challenges-grid" id="main-grid">
-            <!-- Se carga desde JS -->
-        </div>
+        <div class="challenges-grid" id="main-grid"></div>
     </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
@@ -153,7 +146,7 @@
     let editingState = {};
 
     window.onload = () => {
-        db.ref('ahorros_v4').once('value', (snapshot) => {
+        db.ref('ahorros_v4').on('value', (snapshot) => {
             const data = snapshot.val() || {};
             challengeIds = data.challengeIds || [1, 2];
             renderAll();
@@ -170,6 +163,12 @@
 
     function renderAll() {
         const grid = document.getElementById('main-grid');
+        const currentOpenStates = {};
+        challengeIds.forEach(id => {
+            const el = document.getElementById(`collapse-${id}`);
+            if(el) currentOpenStates[id] = el.classList.contains('open');
+        });
+
         grid.innerHTML = '';
         challengeIds.forEach(id => {
             const card = document.createElement('div');
@@ -200,10 +199,10 @@
 
                 <button class="collapse-trigger" onclick="toggleCollapse(${id})">▼ Ver Balance / Cuadros ▼</button>
                 
-                <div id="collapse-${id}" class="collapse-content">
-                    <div id="edit-ctrls-${id}" style="display:none; margin-bottom:10px; justify-content:center; gap:10px;">
-                        <button class="btn btn-edit" onclick="adjustCells(${id}, 1)">+ Fila</button>
-                        <button class="btn btn-edit" onclick="adjustCells(${id}, -1)">- Fila</button>
+                <div id="collapse-${id}" class="collapse-content ${currentOpenStates[id] || editingState[id] ? 'open' : ''}">
+                    <div id="edit-ctrls-${id}" style="display:${editingState[id] ? 'flex' : 'none'}; margin-bottom:10px; justify-content:center; gap:10px;">
+                        <button class="btn btn-edit" onclick="adjustCells(${id}, 1)">+ Cuadro</button>
+                        <button class="btn btn-edit" onclick="adjustCells(${id}, -1)">- Cuadro</button>
                     </div>
                     <table class="savings-table" id="table-${id}"></table>
                 </div>
@@ -219,10 +218,12 @@
 
     async function loadData(id) {
         const snapshot = await db.ref(`ahorros_v4/data_${id}`).once('value');
-        const data = snapshot.val() || { name: `Reto ${id}`, values: [10000, 10000, 10000], saved: [] };
+        const data = snapshot.val() || { name: `Reto ${id}`, values: [0, 0, 0], saved: [] };
         
-        localStorage.setItem(`name_${id}`, data.name);
-        localStorage.setItem(`vals_${id}`, JSON.stringify(data.values));
+        if(!editingState[id]) {
+            localStorage.setItem(`name_${id}`, data.name);
+            localStorage.setItem(`vals_${id}`, JSON.stringify(data.values));
+        }
         localStorage.setItem(`save_${id}`, JSON.stringify(data.saved || []));
         
         refreshUI(id);
@@ -231,10 +232,8 @@
     function refreshUI(id) {
         const name = localStorage.getItem(`name_${id}`);
         const values = JSON.parse(localStorage.getItem(`vals_${id}`));
-        const saved = JSON.parse(localStorage.getItem(`save_${id}`));
         const isEditing = editingState[id];
 
-        // Nombre
         const titleCont = document.getElementById(`title-cont-${id}`);
         if(isEditing) {
             titleCont.innerHTML = `<input type="text" id="in-name-${id}" class="input-title" value="${name}">`;
@@ -242,34 +241,55 @@
             titleCont.innerHTML = `<h2 class="challenge-name">${name}</h2><span class="challenge-sub">Reto Personalizado</span>`;
         }
 
-        // Tabla
+        renderTable(id, values, isEditing);
+        calculateTotals(id);
+    }
+
+    function renderTable(id, values, isEditing) {
         const table = document.getElementById(`table-${id}`);
+        const saved = JSON.parse(localStorage.getItem(`save_${id}`)) || [];
         table.innerHTML = '';
         let row;
         values.forEach((v, i) => {
             if(i % 3 === 0) row = table.insertRow();
             const cell = row.insertCell();
             if(isEditing) {
-                cell.innerHTML = `<input type="text" class="input-edit" value="${formatNumber(v)}" oninput="handleIn(this)">`;
+                cell.innerHTML = `<input type="text" class="input-edit" value="${formatNumber(v)}" oninput="handleIn(this, ${id})">`;
             } else {
                 if(saved.includes(i)) cell.className = 'cell-selected';
                 cell.innerText = `$${formatNumber(v)}`;
                 cell.onclick = () => toggleCheck(id, i);
             }
         });
+    }
 
-        // Totales
+    function handleIn(el, id) {
+        let v = el.value.replace(/\D/g, '');
+        el.value = v === '' ? '' : formatNumber(v);
+        calculateTotals(id); // Suma automática mientras escribe
+    }
+
+    function calculateTotals(id) {
+        const isEditing = editingState[id];
+        let values = [];
+        
+        if(isEditing) {
+            const inputs = document.getElementById(`table-${id}`).querySelectorAll('.input-edit');
+            values = Array.from(inputs).map(i => parseNumber(i.value));
+        } else {
+            values = JSON.parse(localStorage.getItem(`vals_${id}`)) || [];
+        }
+
+        const saved = JSON.parse(localStorage.getItem(`save_${id}`)) || [];
         const totalMeta = values.reduce((a,b) => a+b, 0);
+        
         let totalAhorrado = 0;
-        saved.forEach(idx => { if(values[idx]) totalAhorrado += values[idx]; });
+        saved.forEach(idx => {
+            if(values[idx] !== undefined) totalAhorrado += values[idx];
+        });
         
         document.getElementById(`val-ahorro-${id}`).innerText = `$${formatNumber(totalAhorrado)}`;
         document.getElementById(`val-restante-${id}`).innerText = `$${formatNumber(totalMeta - totalAhorrado)}`;
-    }
-
-    function handleIn(el) {
-        let v = el.value.replace(/\D/g, '');
-        el.value = v === '' ? '' : formatNumber(v);
     }
 
     function toggleCollapse(id) {
@@ -282,7 +302,7 @@
         else saved.push(idx);
         
         localStorage.setItem(`save_${id}`, JSON.stringify(saved));
-        saveToFirebase(id);
+        saveToFirebase(id, false);
         refreshUI(id);
     }
 
@@ -296,10 +316,16 @@
     }
 
     function adjustCells(id, act) {
-        let vals = JSON.parse(localStorage.getItem(`vals_${id}`));
-        if(act === 1) vals.push(0); else vals.pop();
-        localStorage.setItem(`vals_${id}`, JSON.stringify(vals));
-        refreshUI(id);
+        // Capturar valores actuales de los inputs antes de redibujar
+        const inputs = document.getElementById(`table-${id}`).querySelectorAll('.input-edit');
+        let currentVals = Array.from(inputs).map(i => parseNumber(i.value));
+        
+        if(act === 1) currentVals.push(0); 
+        else if(currentVals.length > 0) currentVals.pop();
+        
+        localStorage.setItem(`vals_${id}`, JSON.stringify(currentVals));
+        renderTable(id, currentVals, true);
+        calculateTotals(id);
     }
 
     function saveValues(id) {
@@ -311,21 +337,17 @@
         localStorage.setItem(`vals_${id}`, JSON.stringify(values));
         
         editingState[id] = false;
-        document.getElementById(`btn-edit-${id}`).style.display = 'block';
-        document.getElementById(`btn-save-${id}`).style.display = 'none';
-        document.getElementById(`edit-ctrls-${id}`).style.display = 'none';
-        
-        saveToFirebase(id);
-        refreshUI(id);
+        saveToFirebase(id, true);
+        renderAll();
     }
 
-    function saveToFirebase(id) {
+    function saveToFirebase(id, fullSave) {
         const data = {
             name: localStorage.getItem(`name_${id}`),
             values: JSON.parse(localStorage.getItem(`vals_${id}`)),
             saved: JSON.parse(localStorage.getItem(`save_${id}`))
         };
-        db.ref(`ahorros_v4/data_${id}`).set(data);
+        db.ref(`ahorros_v4/data_${id}`).update(data);
         db.ref(`ahorros_v4/challengeIds`).set(challengeIds);
     }
 
@@ -335,14 +357,13 @@
         const data = { name: "NUEVO RETO", values: [0,0,0], saved: [] };
         db.ref(`ahorros_v4/data_${id}`).set(data).then(() => {
             db.ref(`ahorros_v4/challengeIds`).set(challengeIds);
-            renderAll();
         });
     }
 
     function resetProgress(id) {
         if(confirm("¿Limpiar progreso?")) {
             localStorage.setItem(`save_${id}`, "[]");
-            saveToFirebase(id);
+            saveToFirebase(id, false);
             refreshUI(id);
         }
     }
@@ -352,7 +373,6 @@
             challengeIds = challengeIds.filter(i => i !== id);
             db.ref(`ahorros_v4/data_${id}`).remove();
             db.ref(`ahorros_v4/challengeIds`).set(challengeIds);
-            renderAll();
         }
     }
 </script>
