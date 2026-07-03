@@ -24,7 +24,6 @@
 
         .challenges-grid {
             display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;
-            /* AJUSTE 1: Evita que las columnas se estiren a la misma altura */
             align-items: flex-start; 
         }
 
@@ -34,7 +33,6 @@
             background: white; padding: 20px; border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center; 
-            /* AJUSTE 2: Cambiado de 100% a auto para que se encoja al contenido */
             height: auto; 
             box-sizing: border-box;
             display: flex; flex-direction: column;
@@ -85,11 +83,20 @@
         }
 
         .savings-footer {
-            /* AJUSTE 3: Cambiado margin-top: auto a un margen fijo para evitar el hueco */
             margin-top: 20px; 
-            font-size: 1.4rem; font-weight: bold;
-            padding: 15px; border-top: 2px solid #eee; color: var(--secondary);
+            font-size: 1.1rem; font-weight: bold;
+            padding: 15px; border-top: 2px solid #eee;
         }
+
+        .total-wrapper {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 5px;
+            font-size: 1.3rem;
+        }
+
+        .val-item { display: flex; flex-direction: column; gap: 2px; }
+        .val-label { font-size: 0.7rem; text-transform: uppercase; color: #666; }
 
         .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
@@ -132,9 +139,8 @@
 
                     <table class="savings-table" id="table-500"></table>
                     
-                    <div class="savings-footer">
-                        <small id="footer-label-500">Faltante:</small>
-                        <div id="total-500">$0</div>
+                    <div class="savings-footer" id="footer-500">
+                        <!-- Se llena dinámicamente -->
                     </div>
                     
                     <div class="btn-group">
@@ -157,9 +163,8 @@
 
                     <table class="savings-table" id="table-1000"></table>
                     
-                    <div class="savings-footer">
-                        <small id="footer-label-1000">Faltante:</small>
-                        <div id="total-1000">$0</div>
+                    <div class="savings-footer" id="footer-1000">
+                        <!-- Se llena dinámicamente -->
                     </div>
                     
                     <div class="btn-group">
@@ -234,14 +239,11 @@
         
         const titleContainer = document.getElementById(`container-title-${meta}`);
         const currentTitle = localStorage.getItem(`name_${meta}`) || (meta === 500 ? "💰 Reto 1" : "💰 Reto 2");
-        const footerLabel = document.getElementById(`footer-label-${meta}`);
         
         if(isEditing) {
             titleContainer.innerHTML = `<input type="text" id="input-title-${meta}" class="input-title" value="${currentTitle}">`;
-            footerLabel.innerText = "SUMATORIA TOTAL:";
         } else {
             titleContainer.innerHTML = `<span id="title-${meta}">${currentTitle}</span>`;
-            footerLabel.innerText = "FALTANTE:";
         }
 
         table.innerHTML = "";
@@ -277,8 +279,12 @@
         const inputs = table.querySelectorAll('.input-edit');
         let suma = 0;
         inputs.forEach(i => suma += parseNumber(i.value));
-        document.getElementById(`total-${meta}`).innerText = `$${formatNumber(suma)}`;
-        document.getElementById(`total-${meta}`).style.color = "var(--primary)";
+        
+        const footer = document.getElementById(`footer-${meta}`);
+        footer.innerHTML = `
+            <div class="val-label">Meta Total:</div>
+            <div style="color: var(--primary); font-size: 1.4rem;">$${formatNumber(suma)}</div>
+        `;
     }
 
     function toggleCell(idx, meta, cell, checkbox) {
@@ -299,17 +305,33 @@
         const dataArr = getSavedValues(meta);
         const savedIndices = JSON.parse(localStorage.getItem(`save_${meta}`)) || [];
         const totalMeta = dataArr.reduce((a, b) => a + b, 0);
+        
         let sumaAhorrada = 0;
-        savedIndices.forEach(idx => { if(dataArr[idx] !== undefined) sumaAhorrada += dataArr[idx]; });
+        savedIndices.forEach(idx => { 
+            if(dataArr[idx] !== undefined) sumaAhorrada += dataArr[idx]; 
+        });
+        
         const faltante = totalMeta - sumaAhorrada;
-        const display = document.getElementById(`total-${meta}`);
+        const footer = document.getElementById(`footer-${meta}`);
         
         if(faltante <= 0 && totalMeta > 0) {
-            display.innerText = "¡RETO COMPLETADO!";
-            display.style.color = "var(--secondary)";
+            footer.innerHTML = `
+                <div style="color: var(--secondary); font-size: 1.4rem;">¡RETO COMPLETADO!</div>
+                <div style="font-size: 0.9rem; color: #666;">Total: $${formatNumber(sumaAhorrada)}</div>
+            `;
         } else {
-            display.innerText = `$${formatNumber(faltante)}`;
-            display.style.color = "var(--secondary)";
+            footer.innerHTML = `
+                <div class="total-wrapper">
+                    <div class="val-item">
+                        <span class="val-label">Ahorro</span>
+                        <span style="color: var(--secondary)">$${formatNumber(sumaAhorrada)}</span>
+                    </div>
+                    <div class="val-item">
+                        <span class="val-label">Restante</span>
+                        <span style="color: var(--danger)">$${formatNumber(faltante)}</span>
+                    </div>
+                </div>
+            `;
         }
     }
 
