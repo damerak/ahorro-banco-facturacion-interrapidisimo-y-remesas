@@ -24,13 +24,48 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        .container { width: 100%; max-width: 1200px; margin-top: 20px; padding-bottom: 100px; }
+        .container { width: 100%; max-width: 1200px; margin-top: 20px; padding-bottom: 120px; }
 
-        /* BOTÓN FLOTANTE INFERIOR DERECHA (+) */
-        .fab-add {
+        /* CONTENEDOR FLOTANTE INFERIOR DERECHA */
+        .bottom-right-controls {
             position: fixed;
             bottom: 30px;
             right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        /* CUADRO DE TOTAL GLOBAL */
+        .global-total-card {
+            background: var(--card-bg);
+            border: 1px solid var(--accent-green);
+            padding: 10px 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            min-width: 120px;
+        }
+
+        .global-total-label {
+            font-size: 0.7rem;
+            color: var(--text-gray);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .global-total-amount {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+
+        /* BOTÓN + */
+        .fab-add {
             width: 65px;
             height: 65px;
             background-color: var(--accent-purple);
@@ -44,16 +79,13 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
             transition: transform 0.2s, background-color 0.2s;
         }
         .fab-add:hover {
             transform: scale(1.1);
             background-color: #9366f5;
         }
-        .fab-add:active {
-            transform: scale(0.9);
-        }
+        .fab-add:active { transform: scale(0.9); }
 
         .challenges-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -141,13 +173,21 @@
         @media (max-width: 500px) {
             .challenges-grid { grid-template-columns: 1fr; }
             .totals-section { gap: 10px; }
-            .fab-add { width: 55px; height: 55px; bottom: 20px; right: 20px; font-size: 28px; }
+            .fab-add { width: 55px; height: 55px; font-size: 28px; }
+            .bottom-right-controls { bottom: 20px; right: 20px; gap: 10px; }
+            .global-total-amount { font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
 
-    <button class="fab-add" onclick="addNewChallenge()" title="Añadir Nuevo Reto">+</button>
+    <div class="bottom-right-controls">
+        <div class="global-total-card">
+            <span class="global-total-label">Total Ahorro</span>
+            <span class="global-total-amount" id="global-sum-val">$0</span>
+        </div>
+        <button class="fab-add" onclick="addNewChallenge()" title="Añadir Nuevo Reto">+</button>
+    </div>
 
     <div class="container">
         <div class="challenges-grid" id="main-grid"></div>
@@ -322,6 +362,21 @@
         const restanteEl = document.getElementById(`val-restante-${id}`);
         if(ahorroEl) ahorroEl.innerText = `$${formatNumber(totalAhorrado)}`;
         if(restanteEl) restanteEl.innerText = `$${formatNumber(totalMeta - totalAhorrado)}`;
+
+        updateGlobalTotal(); // Actualiza el total general cada vez que cambia una tabla
+    }
+
+    function updateGlobalTotal() {
+        let globalSum = 0;
+        challengeIds.forEach(id => {
+            const values = JSON.parse(localStorage.getItem(`vals_${id}`)) || [];
+            const saved = JSON.parse(localStorage.getItem(`save_${id}`)) || [];
+            saved.forEach(idx => {
+                if(values[idx] !== undefined) globalSum += values[idx];
+            });
+        });
+        const globalEl = document.getElementById('global-sum-val');
+        if(globalEl) globalEl.innerText = `$${formatNumber(globalSum)}`;
     }
 
     function toggleCollapse(id) {
@@ -401,7 +456,6 @@
         }
     }
 
-    // ELIMINACIÓN DIRECTA SIN CONFIRMACIÓN
     function deleteChallenge(id) {
         const updatedIds = challengeIds.filter(i => i !== id);
         db.ref(`ahorros_v4/data_${id}`).remove().then(() => {
