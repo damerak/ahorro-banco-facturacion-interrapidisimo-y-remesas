@@ -51,19 +51,29 @@
             margin-bottom: 15px;
         }
 
-        .title-section { display: flex; flex-direction: column; flex: 1; }
+        .title-section { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         .challenge-name { 
             color: white; font-weight: bold; font-size: 1.1rem; 
             text-transform: uppercase; margin: 0;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .challenge-sub { color: var(--text-gray); font-size: 0.8rem; }
 
-        .totals-section { text-align: right; display: flex; gap: 20px; }
+        .totals-section { text-align: right; display: flex; gap: 15px; align-items: center; }
         .total-box { display: flex; flex-direction: column; }
         .total-label { font-size: 0.65rem; color: var(--text-gray); font-weight: bold; text-transform: uppercase; }
         .total-val { font-size: 1.3rem; font-weight: bold; }
         .val-ahorro { color: var(--accent-green); }
         .val-restante { color: var(--accent-purple); }
+
+        /* BOTÓN X ELIMINAR */
+        .btn-delete-x {
+            background: none; border: none; color: var(--accent-red);
+            font-size: 1.5rem; font-weight: bold; cursor: pointer;
+            padding: 0 0 0 10px; line-height: 1; transition: transform 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-delete-x:hover { transform: scale(1.2); }
 
         /* BOTONES ACCIÓN */
         .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -115,6 +125,7 @@
 
         @media (max-width: 500px) {
             .challenges-grid { grid-template-columns: 1fr; }
+            .totals-section { gap: 10px; }
         }
     </style>
 </head>
@@ -188,6 +199,7 @@
                             <span class="total-label">Restante</span>
                             <span class="total-val val-restante" id="val-restante-${id}">$0</span>
                         </div>
+                        <button class="btn-delete-x" onclick="deleteChallenge(${id})" title="Eliminar Reto">×</button>
                     </div>
                 </div>
 
@@ -205,10 +217,6 @@
                         <button class="btn btn-edit" onclick="adjustCells(${id}, -1)">- Cuadro</button>
                     </div>
                     <table class="savings-table" id="table-${id}"></table>
-                </div>
-                
-                <div style="text-align:right; margin-top:10px;">
-                    <a href="#" onclick="deleteChallenge(${id})" style="color:var(--text-gray); font-size:0.6rem; text-decoration:none;">Eliminar Reto</a>
                 </div>
             `;
             grid.appendChild(card);
@@ -266,7 +274,7 @@
     function handleIn(el, id) {
         let v = el.value.replace(/\D/g, '');
         el.value = v === '' ? '' : formatNumber(v);
-        calculateTotals(id); // Suma automática mientras escribe
+        calculateTotals(id); 
     }
 
     function calculateTotals(id) {
@@ -274,8 +282,11 @@
         let values = [];
         
         if(isEditing) {
-            const inputs = document.getElementById(`table-${id}`).querySelectorAll('.input-edit');
-            values = Array.from(inputs).map(i => parseNumber(i.value));
+            const table = document.getElementById(`table-${id}`);
+            if(table) {
+                const inputs = table.querySelectorAll('.input-edit');
+                values = Array.from(inputs).map(i => parseNumber(i.value));
+            }
         } else {
             values = JSON.parse(localStorage.getItem(`vals_${id}`)) || [];
         }
@@ -288,8 +299,10 @@
             if(values[idx] !== undefined) totalAhorrado += values[idx];
         });
         
-        document.getElementById(`val-ahorro-${id}`).innerText = `$${formatNumber(totalAhorrado)}`;
-        document.getElementById(`val-restante-${id}`).innerText = `$${formatNumber(totalMeta - totalAhorrado)}`;
+        const ahorroEl = document.getElementById(`val-ahorro-${id}`);
+        const restanteEl = document.getElementById(`val-restante-${id}`);
+        if(ahorroEl) ahorroEl.innerText = `$${formatNumber(totalAhorrado)}`;
+        if(restanteEl) restanteEl.innerText = `$${formatNumber(totalMeta - totalAhorrado)}`;
     }
 
     function toggleCollapse(id) {
@@ -302,7 +315,7 @@
         else saved.push(idx);
         
         localStorage.setItem(`save_${id}`, JSON.stringify(saved));
-        saveToFirebase(id, false);
+        saveToFirebase(id);
         refreshUI(id);
     }
 
@@ -316,7 +329,6 @@
     }
 
     function adjustCells(id, act) {
-        // Capturar valores actuales de los inputs antes de redibujar
         const inputs = document.getElementById(`table-${id}`).querySelectorAll('.input-edit');
         let currentVals = Array.from(inputs).map(i => parseNumber(i.value));
         
@@ -329,7 +341,8 @@
     }
 
     function saveValues(id) {
-        const name = document.getElementById(`in-name-${id}`).value;
+        const nameEl = document.getElementById(`in-name-${id}`);
+        const name = nameEl ? nameEl.value : `Reto ${id}`;
         const inputs = document.getElementById(`table-${id}`).querySelectorAll('.input-edit');
         const values = Array.from(inputs).map(i => parseNumber(i.value)).sort((a,b) => a-b);
         
@@ -337,11 +350,11 @@
         localStorage.setItem(`vals_${id}`, JSON.stringify(values));
         
         editingState[id] = false;
-        saveToFirebase(id, true);
+        saveToFirebase(id);
         renderAll();
     }
 
-    function saveToFirebase(id, fullSave) {
+    function saveToFirebase(id) {
         const data = {
             name: localStorage.getItem(`name_${id}`),
             values: JSON.parse(localStorage.getItem(`vals_${id}`)),
@@ -363,13 +376,13 @@
     function resetProgress(id) {
         if(confirm("¿Limpiar progreso?")) {
             localStorage.setItem(`save_${id}`, "[]");
-            saveToFirebase(id, false);
+            saveToFirebase(id);
             refreshUI(id);
         }
     }
 
     function deleteChallenge(id) {
-        if(confirm("¿Eliminar reto?")) {
+        if(confirm("¿Eliminar este reto permanentemente?")) {
             challengeIds = challengeIds.filter(i => i !== id);
             db.ref(`ahorros_v4/data_${id}`).remove();
             db.ref(`ahorros_v4/challengeIds`).set(challengeIds);
