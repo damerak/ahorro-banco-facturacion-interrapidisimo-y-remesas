@@ -33,6 +33,8 @@
             font-weight: bold; color: white; cursor: pointer; text-transform: uppercase; margin-bottom: 5px;
         }
         .btn-clear { background: var(--danger); }
+        /* Estilo para botón festivos */
+        .btn-holiday { background: var(--warning); color: #000 !important; margin-left: 5px; }
 
         /* --- ESTILOS TABLA --- */
         #view-inter * { font-family: Arial, Helvetica, sans-serif !important; font-weight: bold !important; font-size: 13px !important; box-sizing: border-box; }
@@ -110,8 +112,27 @@
 
         select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
 
+        /* MODAL CALENDARIO FESTIVOS */
+        #holidayModal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; 
+            width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 12px; width: 320px; text-align: center;
+        }
+        .calendar-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 15px;
+        }
+        .cal-day {
+            padding: 8px; border: 1px solid #ddd; cursor: pointer; border-radius: 4px; font-size: 12px;
+        }
+        .cal-day.selected { background: var(--danger); color: white; border-color: var(--danger); }
+        .cal-day:hover { background: #eee; }
+        .cal-day.disabled { color: #ccc; cursor: default; }
+
         @media print {
-            .header-controls-inter, .btn-clear { display: none !important; }
+            .header-controls-inter, .btn-clear, .btn-holiday { display: none !important; }
             body { background: white; }
             .container { padding: 0; }
         }
@@ -135,6 +156,7 @@
                     </select>
                 </div>
                 <button class="btn btn-clear" style="width: auto;" onclick="clearAllFieldsInter()">LIMPIAR MES</button>
+                <button class="btn btn-holiday" style="width: auto;" onclick="openHolidayModal()">FESTIVOS</button>
             </div>
 
             <div class="table-container-inter" id="mainContainerInter"></div>
@@ -148,6 +170,16 @@
                 <div class="summary-box-inter" style="border-color: #009688;"><span>TOTAL GANADO</span><span id="totalNetoInter" class="val-display-inter" style="color: #00796b;">$ 0</span></div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Modal para Festivos -->
+<div id="holidayModal">
+    <div class="modal-content">
+        <h3 id="modalTitle" style="margin-top:0">Festivos</h3>
+        <p style="font-size: 11px; color: #666;">Selecciona los días festivos para ocultarlos de la tabla.</p>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <button class="btn" style="background: var(--primary); margin-top: 20px;" onclick="closeHolidayModal()">CERRAR Y GUARDAR</button>
     </div>
 </div>
 
@@ -171,7 +203,6 @@
     const yearSelectInter = document.getElementById('yearSelectInter');
     const containerInter = document.getElementById('mainContainerInter');
     
-    // Selectores del resumen
     const totalGeneralDispInter = document.getElementById('totalGeneralInter');
     const totalEnviosDispInter = document.getElementById('totalEnviosInter');
     const totalGananciaDispInter = document.getElementById('totalGananciaInter');
@@ -204,6 +235,7 @@
     }
 
     function getStorageKeyInter() { return `inter_local_${yearSelectInter.value}_${monthSelectInter.value}`; }
+    function getHolidayKeyInter() { return `inter_holidays_${yearSelectInter.value}_${monthSelectInter.value}`; }
 
     function saveInterData() {
         const rows = document.querySelectorAll('.data-row-inter');
@@ -238,21 +270,11 @@
             row.querySelector('.row-total-inter').innerHTML = sumaFila > 0 ? sumaFila : "";
         });
 
-        // --- LÓGICA DE CÁLCULO SEGÚN IMAGEN ---
-        
-        // 1. Ganancia (Pagos a la agencia): es el 20% del recaudo total
         const ganancia = Math.floor(totalDineroRecaudado * 0.20);
-        
-        // 2. ICA: se calcula sobre la GANANCIA (Base), multiplicado por 4.14 / 1000
         const impuestoIca = Math.floor(ganancia * 0.00414);
-        
-        // 3. Rete Fuente: se calcula sobre la GANANCIA (Base), al 1%
         const reteFuente = Math.floor(ganancia * 0.01);
-        
-        // 4. Total Neto: Ganancia - ICA - ReteFuente
         const totalNeto = ganancia - impuestoIca - reteFuente;
         
-        // Mostrar en pantalla
         totalGeneralDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalDineroRecaudado) : "0");
         totalEnviosDispInter.innerHTML = totalCantidades;
         totalGananciaDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(ganancia) : "0");
@@ -265,31 +287,42 @@
         const year = parseInt(yearSelectInter.value);
         const month = parseInt(monthSelectInter.value);
         const key = getStorageKeyInter();
+        const hKey = getHolidayKeyInter();
         
-        db.ref('logistica/' + key).once('value', (snapshot) => {
-            const cloudData = snapshot.val();
-            if(cloudData) localStorage.setItem(key, JSON.stringify(cloudData));
+        // Cargar festivos primero
+        db.ref('logistica_festivos/' + hKey).once('value', (hSnap) => {
+            const cloudHolidays = hSnap.val() || [];
+            localStorage.setItem(hKey, JSON.stringify(cloudHolidays));
             
-            let savedData = JSON.parse(localStorage.getItem(key)) || {};
-            containerInter.innerHTML = '';
-            
-            let daysCol1 = [];
-            let daysCol2 = [];
-            
-            let date = new Date(year, month, 1);
-            while (date.getMonth() === month) {
-                if (date.getDay() !== 0) {
-                    let mName = date.toLocaleString('es-ES', { month: 'short' }).toUpperCase();
-                    let dayObj = { label: `${mName}-${date.getDate()}`, dayNum: date.getDate() };
-                    if (date.getDate() <= 15) { daysCol1.push(dayObj); } 
-                    else { daysCol2.push(dayObj); }
+            // Cargar datos
+            db.ref('logistica/' + key).once('value', (snapshot) => {
+                const cloudData = snapshot.val();
+                if(cloudData) localStorage.setItem(key, JSON.stringify(cloudData));
+                
+                let savedData = JSON.parse(localStorage.getItem(key)) || {};
+                let holidays = JSON.parse(localStorage.getItem(hKey)) || [];
+                
+                containerInter.innerHTML = '';
+                let daysCol1 = [];
+                let daysCol2 = [];
+                
+                let date = new Date(year, month, 1);
+                while (date.getMonth() === month) {
+                    const dayNum = date.getDate();
+                    // No incluir si es Domingo O si está en la lista de festivos
+                    if (date.getDay() !== 0 && !holidays.includes(dayNum)) {
+                        let mName = date.toLocaleString('es-ES', { month: 'short' }).toUpperCase();
+                        let dayObj = { label: `${mName}-${dayNum}`, dayNum: dayNum };
+                        if (dayNum <= 15) { daysCol1.push(dayObj); } 
+                        else { daysCol2.push(dayObj); }
+                    }
+                    date.setDate(date.getDate() + 1);
                 }
-                date.setDate(date.getDate() + 1);
-            }
-            
-            containerInter.appendChild(createTableInter(daysCol1, savedData));
-            containerInter.appendChild(createTableInter(daysCol2, savedData));
-            calculateSummariesInter();
+                
+                containerInter.appendChild(createTableInter(daysCol1, savedData));
+                containerInter.appendChild(createTableInter(daysCol2, savedData));
+                calculateSummariesInter();
+            });
         });
     }
 
@@ -335,11 +368,77 @@
         return table;
     }
 
+    // --- FUNCIONES MODAL FESTIVOS ---
+    function openHolidayModal() {
+        const modal = document.getElementById('holidayModal');
+        const grid = document.getElementById('calendarGrid');
+        const year = parseInt(yearSelectInter.value);
+        const month = parseInt(monthSelectInter.value);
+        const hKey = getHolidayKeyInter();
+        const savedHolidays = JSON.parse(localStorage.getItem(hKey)) || [];
+
+        document.getElementById('modalTitle').innerText = `Festivos ${monthSelectInter.options[month].text}`;
+        grid.innerHTML = '';
+        
+        // Crear cabecera días
+        ['D','L','M','X','J','V','S'].forEach(d => {
+            let div = document.createElement('div');
+            div.innerText = d; div.style.fontWeight = 'bold';
+            grid.appendChild(div);
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+
+        // Espacios vacíos inicio mes
+        for(let i=0; i<firstDay; i++) {
+            let empty = document.createElement('div');
+            empty.className = 'cal-day disabled';
+            grid.appendChild(empty);
+        }
+
+        for(let d=1; d<=lastDay; d++) {
+            let dayBox = document.createElement('div');
+            dayBox.className = 'cal-day';
+            dayBox.innerText = d;
+            
+            const checkDate = new Date(year, month, d);
+            if(checkDate.getDay() === 0) {
+                dayBox.classList.add('disabled');
+                dayBox.title = "Domingo";
+            } else {
+                if(savedHolidays.includes(d)) dayBox.classList.add('selected');
+                dayBox.onclick = () => {
+                    dayBox.classList.toggle('selected');
+                };
+            }
+            grid.appendChild(dayBox);
+        }
+        modal.style.display = 'flex';
+    }
+
+    function closeHolidayModal() {
+        const hKey = getHolidayKeyInter();
+        const selected = [];
+        document.querySelectorAll('.cal-day.selected').forEach(el => {
+            selected.push(parseInt(el.innerText));
+        });
+        
+        localStorage.setItem(hKey, JSON.stringify(selected));
+        db.ref('logistica_festivos/' + hKey).set(selected);
+        
+        document.getElementById('holidayModal').style.display = 'none';
+        generateTablesInter();
+    }
+
     function clearAllFieldsInter() {
         if(confirm("¿Borrar datos del mes?")) {
             const key = getStorageKeyInter();
+            const hKey = getHolidayKeyInter();
             localStorage.removeItem(key);
+            localStorage.removeItem(hKey);
             db.ref('logistica/' + key).remove();
+            db.ref('logistica_festivos/' + hKey).remove();
             generateTablesInter();
         }
     }
