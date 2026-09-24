@@ -157,14 +157,15 @@
                 </div>
                 <button class="btn btn-clear" style="width: auto;" onclick="clearAllFieldsInter()">LIMPIAR MES</button>
                 <button class="btn btn-holiday" style="width: auto;" onclick="openHolidayModal()">FESTIVOS</button>
+                <div class="summary-box-inter" style="border-color: #2196F3; min-width: 90px; padding: 6px 10px;"><span>TOTAL ENVÍOS</span><span id="totalEnviosInter" class="val-display-inter" style="color: #1976D2;">0</span></div>
             </div>
 
             <div class="table-container-inter" id="mainContainerInter"></div>
 
             <div class="footer-summary-inter">
                 <div class="summary-box-inter"><span>TOTAL VALOR</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
-                <div class="summary-box-inter" style="border-color: #2196F3;"><span>TOTAL ENVÍOS</span><span id="totalEnviosInter" class="val-display-inter" style="color: #1976D2;">0</span></div>
                 <div class="summary-box-inter" style="border-color: #f44336;"><span>20%</span><span id="totalGananciaInter" class="val-display-inter" style="color: #c62828;">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color: #e91e63;"><span>18%</span><span id="totalGanancia18Inter" class="val-display-inter" style="color: #ad1457;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #9c27b0;"><span>ICA (4.14 x 1000)</span><span id="totalIcaInter" class="val-display-inter" style="color: #7b1fa2;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #ff9800;"><span>RETE FUENTE</span><span id="totalReteInter" class="val-display-inter" style="color: #e65100;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #009688;"><span>TOTAL GANADO</span><span id="totalNetoInter" class="val-display-inter" style="color: #00796b;">$ 0</span></div>
@@ -206,6 +207,7 @@
     const totalGeneralDispInter = document.getElementById('totalGeneralInter');
     const totalEnviosDispInter = document.getElementById('totalEnviosInter');
     const totalGananciaDispInter = document.getElementById('totalGananciaInter');
+    const totalGanancia18DispInter = document.getElementById('totalGanancia18Inter');
     const totalIcaDispInter = document.getElementById('totalIcaInter');
     const totalReteDispInter = document.getElementById('totalReteInter');
     const totalNetoDispInter = document.getElementById('totalNetoInter');
@@ -271,6 +273,7 @@
         });
 
         const ganancia = Math.floor(totalDineroRecaudado * 0.20);
+        const ganancia18 = Math.floor(totalDineroRecaudado * 0.18);
         const impuestoIca = Math.floor(ganancia * 0.00414);
         const reteFuente = Math.floor(ganancia * 0.01);
         const totalNeto = ganancia - impuestoIca - reteFuente;
@@ -278,6 +281,7 @@
         totalGeneralDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalDineroRecaudado) : "0");
         totalEnviosDispInter.innerHTML = totalCantidades;
         totalGananciaDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(ganancia) : "0");
+        totalGanancia18DispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(ganancia18) : "0");
         totalIcaDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(impuestoIca) : "0");
         totalReteDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(reteFuente) : "0");
         totalNetoDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalNeto) : "0");
