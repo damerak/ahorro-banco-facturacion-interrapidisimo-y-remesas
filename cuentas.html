@@ -186,32 +186,11 @@
         </div>
     </div>
 
-    <button class="btn-clear" onclick="clearData()">LIMPIAR TODO</button>
+    <button class="btn-clear" id="btn-clear">LIMPIAR TODO</button>
 
     <script>
         const formatCOP = (num) => '$ ' + new Intl.NumberFormat('de-DE').format(num);
         const cleanNum = (str) => parseInt(str.toString().replace(/\D/g, '')) || 0;
-
-        function init() {
-            const savedData = JSON.parse(localStorage.getItem('cajaCompactData') || '{}');
-            Object.keys(savedData).forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.value = savedData[id];
-                    if (el.classList.contains('manual') && el.value !== "") {
-                        el.value = new Intl.NumberFormat('de-DE').format(cleanNum(el.value));
-                    }
-                }
-            });
-            calculate();
-        }
-
-        function saveData() {
-            const inputs = document.querySelectorAll('input');
-            const data = {};
-            inputs.forEach(input => { data[input.id] = input.value; });
-            localStorage.setItem('cajaCompactData', JSON.stringify(data));
-        }
 
         function calculate() {
             let subTL = 0;
@@ -226,16 +205,6 @@
             let extTL = cleanNum(document.getElementById('tl_extra').value);
             document.getElementById('tl_monedas_total').innerText = formatCOP(monTL);
             document.getElementById('tl_grand_total').innerText = formatCOP(subTL + monTL + extTL);
-
-            saveData();
-        }
-
-        function clearData() {
-            if (confirm('¿BORRAR TODO?')) {
-                document.querySelectorAll('input').forEach(i => i.value = "");
-                localStorage.removeItem('cajaCompactData');
-                calculate();
-            }
         }
 
         document.querySelectorAll('input').forEach(input => {
@@ -247,14 +216,12 @@
                 calculate();
             });
         });
-
-        window.onload = init;
     </script>
 
-    <!-- FIREBASE CONNECTION -->
+    <!-- FIREBASE INTEGRATION -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyD8UmZOWnI3_RFronTxFLYTVssTalnsiXI",
@@ -268,6 +235,51 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const cajaRef = doc(db, "caja", "estado");
+
+        // Escuchar cambios en tiempo real desde Firebase
+        onSnapshot(cajaRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                Object.keys(data).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.value = data[id];
+                        if (el.classList.contains('manual') && el.value !== "") {
+                            el.value = new Intl.NumberFormat('de-DE').format(cleanNum(el.value));
+                        }
+                    }
+                });
+                calculate();
+            }
+        });
+
+        // Guardar en Firebase cuando cambien los inputs
+        async function saveToFirebase() {
+            const inputs = document.querySelectorAll('input');
+            const data = {};
+            inputs.forEach(input => { data[input.id] = input.value; });
+            await setDoc(cajaRef, data);
+        }
+
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => {
+                saveToFirebase();
+            });
+        });
+
+        // Evento para limpiar datos en Firebase
+        document.getElementById('btn-clear').addEventListener('click', async () => {
+            if (confirm('¿BORRAR TODO?')) {
+                const emptyData = {};
+                document.querySelectorAll('input').forEach(i => {
+                    i.value = "";
+                    emptyData[i.id] = "";
+                });
+                calculate();
+                await setDoc(cajaRef, emptyData);
+            }
+        });
     </script>
 </body>
 </html>
