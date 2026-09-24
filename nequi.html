@@ -227,13 +227,44 @@
         </table>
     </div>
 
-    <script>
+    <div id="syncStatus" style="position:fixed; bottom:8px; right:12px; font-size:0.7rem; opacity:0.6; color:#f1f5f9;"></div>
+
+    <!-- FIREBASE + LOGICA DE LA TABLA (todo en un solo módulo) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            setDoc
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyD8UmZOWnI3_RFronTxFLYTVssTalnsiXI",
+          authDomain: "gastosprestamoscuentasnequi.firebaseapp.com",
+          databaseURL: "https://gastosprestamoscuentasnequi-default-rtdb.firebaseio.com",
+          projectId: "gastosprestamoscuentasnequi",
+          storageBucket: "gastosprestamoscuentasnequi.firebasestorage.app",
+          messagingSenderId: "350167767655",
+          appId: "1:350167767655:web:ea01b86a4ec3231c4352c2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const tablaRef = doc(db, "tablas", "principal");
+
         const ROWS_COUNT = 15;
+        const statusEl = document.getElementById('syncStatus');
+        let saveTimer = null;
+
+        function setStatus(text) {
+            if (statusEl) statusEl.innerText = text;
+        }
 
         function init() {
             renderRows('tbody1');
             renderRows('tbody2');
-            loadFromStorage();
+            loadFromFirebase();
         }
 
         function renderRows(containerId) {
@@ -241,15 +272,26 @@
             for (let i = 0; i < ROWS_COUNT; i++) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><input type="text" class="input-money" oninput="handleMoneyInput(this)"></td>
-                    <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
-                    <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
-                    <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
-                    <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
-                    <td><input type="checkbox" class="chk" onchange="handleCheckChange()"></td>
-                    <td><input type="checkbox" class="chk check-red" onchange="handleRedRow(this)"></td>
+                    <td><input type="text" class="input-money"></td>
+                    <td><input type="checkbox" class="chk"></td>
+                    <td><input type="checkbox" class="chk"></td>
+                    <td><input type="checkbox" class="chk"></td>
+                    <td><input type="checkbox" class="chk"></td>
+                    <td><input type="checkbox" class="chk"></td>
+                    <td><input type="checkbox" class="chk check-red"></td>
                 `;
                 container.appendChild(tr);
+
+                const moneyInput = tr.querySelector('.input-money');
+                moneyInput.addEventListener('input', () => handleMoneyInput(moneyInput));
+
+                const checks = tr.querySelectorAll('.chk');
+                // Los primeros 5 checks (llave, inter, banco, davi, cuota)
+                for (let c = 0; c < 5; c++) {
+                    checks[c].addEventListener('change', handleCheckChange);
+                }
+                // El sexto check es la fila roja (bandera)
+                checks[5].addEventListener('change', () => handleRedRow(checks[5]));
             }
         }
 
@@ -284,7 +326,7 @@
                 const moneyStr = tr.querySelector('.input-money').value;
                 const valor = parseInt(moneyStr.replace(/\./g, "")) || 0;
                 const checks = tr.querySelectorAll('.chk');
-                
+
                 const isLlave = checks[0].checked;
                 const isInt = checks[1].checked;
                 const isBanco = checks[2].checked;
@@ -311,68 +353,88 @@
             document.getElementById('totalCuota').innerText = "$ " + formatter.format(totalCuota);
         }
 
-        function saveAll() {
+        function collectData() {
             const allData = [];
             document.querySelectorAll('tbody tr').forEach(tr => {
                 const money = tr.querySelector('.input-money').value;
                 const checks = Array.from(tr.querySelectorAll('.chk')).map(c => c.checked);
                 allData.push({ money, checks });
             });
-            localStorage.setItem('tablaDataSave_v3', JSON.stringify(allData));
+            return allData;
         }
 
-        function loadFromStorage() {
-            const saved = localStorage.getItem('tablaDataSave_v3');
-            if (!saved) return;
-            const data = JSON.parse(saved);
-            const rows = document.querySelectorAll('tbody tr');
-            
-            data.forEach((item, index) => {
-                if (rows[index]) {
-                    const tr = rows[index];
-                    tr.querySelector('.input-money').value = item.money || "";
-                    const checks = tr.querySelectorAll('.chk');
-                    if (item.checks) {
-                        item.checks.forEach((isChecked, i) => {
-                            if (checks[i]) {
-                                checks[i].checked = isChecked;
-                                // El índice 5 es el check rojo en esta versión
-                                if (i === 5 && isChecked) tr.classList.add('row-red');
-                            }
-                        });
-                    }
+        // Guardado automático en Firebase con un pequeño retraso (debounce)
+        // para no disparar una escritura por cada tecla presionada.
+        function saveAll() {
+            setStatus('Guardando...');
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(async () => {
+                try {
+                    await setDoc(tablaRef, {
+                        rows: collectData(),
+                        actualizado: new Date().toISOString()
+                    });
+                    setStatus('Guardado ✓');
+                } catch (err) {
+                    console.error('Error guardando en Firebase:', err);
+                    setStatus('Error al guardar');
                 }
-            });
+            }, 500);
+        }
+
+        async function loadFromFirebase() {
+            setStatus('Cargando...');
+            try {
+                const snap = await getDoc(tablaRef);
+                if (snap.exists()) {
+                    const data = snap.data().rows || [];
+                    const rows = document.querySelectorAll('tbody tr');
+
+                    data.forEach((item, index) => {
+                        if (rows[index]) {
+                            const tr = rows[index];
+                            tr.querySelector('.input-money').value = item.money || "";
+                            const checks = tr.querySelectorAll('.chk');
+                            if (item.checks) {
+                                item.checks.forEach((isChecked, i) => {
+                                    if (checks[i]) {
+                                        checks[i].checked = isChecked;
+                                        if (i === 5 && isChecked) tr.classList.add('row-red');
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    setStatus('Datos cargados de Firebase');
+                } else {
+                    setStatus('Sin datos previos en Firebase');
+                }
+            } catch (err) {
+                console.error('Error cargando de Firebase:', err);
+                setStatus('Error al cargar');
+            }
             updateTotal();
         }
 
-        function clearAll() {
-            if (confirm("¿Estás seguro de borrar todos los datos?")) {
-                localStorage.removeItem('tablaDataSave_v3');
-                location.reload();
+        window.clearAll = async function () {
+            if (confirm("¿Estás seguro de borrar todos los datos? Esto también los borrará en Firebase.")) {
+                document.querySelectorAll('tbody tr').forEach(tr => {
+                    tr.querySelector('.input-money').value = "";
+                    tr.querySelectorAll('.chk').forEach(c => c.checked = false);
+                    tr.classList.remove('row-red');
+                });
+                updateTotal();
+                try {
+                    await setDoc(tablaRef, { rows: collectData(), actualizado: new Date().toISOString() });
+                    setStatus('Tabla borrada');
+                } catch (err) {
+                    console.error('Error borrando en Firebase:', err);
+                    setStatus('Error al borrar');
+                }
             }
-        }
-
-        init();
-    </script>
-
-    <!-- FIREBASE CONNECTION -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyD8UmZOWnI3_RFronTxFLYTVssTalnsiXI",
-          authDomain: "gastosprestamoscuentasnequi.firebaseapp.com",
-          databaseURL: "https://gastosprestamoscuentasnequi-default-rtdb.firebaseio.com",
-          projectId: "gastosprestamoscuentasnequi",
-          storageBucket: "gastosprestamoscuentasnequi.firebasestorage.app",
-          messagingSenderId: "350167767655",
-          appId: "1:350167767655:web:ea01b86a4ec3231c4352c2"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        init();
     </script>
 </body>
 </html>
