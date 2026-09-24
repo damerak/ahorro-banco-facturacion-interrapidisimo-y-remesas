@@ -189,6 +189,8 @@
         <button class="fab-add" onclick="addNewChallenge()" title="Añadir Nuevo Reto">+</button>
     </div>
 
+    <div id="syncStatus" style="position:fixed; bottom:8px; right:12px; font-size:0.7rem; opacity:0.6; color:#8b949e;"></div>
+
     <div class="container">
         <div class="challenges-grid" id="main-grid"></div>
     </div>
@@ -211,6 +213,9 @@
 
     let challengeIds = [];
     let editingState = {};
+    let challengesData = {}; // Caché en memoria: reemplaza a localStorage
+    const statusEl = () => document.getElementById('syncStatus');
+    function setStatus(text) { const el = statusEl(); if (el) el.innerText = text; }
 
     db.ref('ahorros_v4').on('value', (snapshot) => {
         const data = snapshot.val() || {};
@@ -281,21 +286,29 @@
     }
 
     async function loadData(id) {
-        const snapshot = await db.ref(`ahorros_v4/data_${id}`).once('value');
-        const data = snapshot.val() || { name: `Reto ${id}`, values: [0, 0, 0], saved: [] };
-        
-        if(!editingState[id]) {
-            localStorage.setItem(`name_${id}`, data.name);
-            localStorage.setItem(`vals_${id}`, JSON.stringify(data.values));
+        setStatus('Cargando...');
+        try {
+            const snapshot = await db.ref(`ahorros_v4/data_${id}`).once('value');
+            const data = snapshot.val() || { name: `Reto ${id}`, values: [0, 0, 0], saved: [] };
+
+            if(!challengesData[id]) challengesData[id] = {};
+            if(!editingState[id]) {
+                challengesData[id].name = data.name;
+                challengesData[id].values = data.values || [0];
+            }
+            challengesData[id].saved = data.saved || [];
+
+            setStatus('Datos cargados de Firebase');
+        } catch (err) {
+            console.error('Error cargando de Firebase:', err);
+            setStatus('Error al cargar');
         }
-        localStorage.setItem(`save_${id}`, JSON.stringify(data.saved || []));
-        
         refreshUI(id);
     }
 
     function refreshUI(id) {
-        const name = localStorage.getItem(`name_${id}`);
-        const values = JSON.parse(localStorage.getItem(`vals_${id}`)) || [0];
+        const name = (challengesData[id] || {}).name || `Reto ${id}`;
+        const values = (challengesData[id] || {}).values || [0];
         const isEditing = editingState[id];
 
         const titleCont = document.getElementById(`title-cont-${id}`);
@@ -314,7 +327,7 @@
     function renderTable(id, values, isEditing) {
         const table = document.getElementById(`table-${id}`);
         if(!table) return;
-        const saved = JSON.parse(localStorage.getItem(`save_${id}`)) || [];
+        const saved = (challengesData[id] || {}).saved || [];
         table.innerHTML = '';
         let row;
         values.forEach((v, i) => {
@@ -347,10 +360,10 @@
                 values = Array.from(inputs).map(i => parseNumber(i.value));
             }
         } else {
-            values = JSON.parse(localStorage.getItem(`vals_${id}`)) || [];
+            values = (challengesData[id] || {}).values || [];
         }
 
-        const saved = JSON.parse(localStorage.getItem(`save_${id}`)) || [];
+        const saved = (challengesData[id] || {}).saved || [];
         const totalMeta = values.reduce((a,b) => a+b, 0);
         
         let totalAhorrado = 0;
@@ -369,8 +382,8 @@
     function updateGlobalTotal() {
         let globalSum = 0;
         challengeIds.forEach(id => {
-            const values = JSON.parse(localStorage.getItem(`vals_${id}`)) || [];
-            const saved = JSON.parse(localStorage.getItem(`save_${id}`)) || [];
+            const values = (challengesData[id] || {}).values || [];
+            const saved = (challengesData[id] || {}).saved || [];
             saved.forEach(idx => {
                 if(values[idx] !== undefined) globalSum += values[idx];
             });
@@ -385,11 +398,12 @@
     }
 
     function toggleCheck(id, idx) {
-        let saved = JSON.parse(localStorage.getItem(`save_${id}`));
+        let saved = (challengesData[id] || {}).saved || [];
         if(saved.includes(idx)) saved = saved.filter(i => i !== idx);
         else saved.push(idx);
-        
-        localStorage.setItem(`save_${id}`, JSON.stringify(saved));
+
+        if(!challengesData[id]) challengesData[id] = {};
+        challengesData[id].saved = saved;
         saveToFirebase(id);
         refreshUI(id);
     }
@@ -410,7 +424,8 @@
         if(act === 1) currentVals.push(0); 
         else if(currentVals.length > 0) currentVals.pop();
         
-        localStorage.setItem(`vals_${id}`, JSON.stringify(currentVals));
+        if(!challengesData[id]) challengesData[id] = {};
+        challengesData[id].values = currentVals;
         renderTable(id, currentVals, true);
         calculateTotals(id);
     }
@@ -421,21 +436,30 @@
         const inputs = document.getElementById(`table-${id}`).querySelectorAll('.input-edit');
         const values = Array.from(inputs).map(i => parseNumber(i.value)).sort((a,b) => a-b);
         
-        localStorage.setItem(`name_${id}`, name);
-        localStorage.setItem(`vals_${id}`, JSON.stringify(values));
+        if(!challengesData[id]) challengesData[id] = {};
+        challengesData[id].name = name;
+        challengesData[id].values = values;
         
         editingState[id] = false;
         saveToFirebase(id);
     }
 
-    function saveToFirebase(id) {
+    async function saveToFirebase(id) {
+        const cache = challengesData[id] || {};
         const data = {
-            name: localStorage.getItem(`name_${id}`),
-            values: JSON.parse(localStorage.getItem(`vals_${id}`)),
-            saved: JSON.parse(localStorage.getItem(`save_${id}`))
+            name: cache.name || `Reto ${id}`,
+            values: cache.values || [],
+            saved: cache.saved || []
         };
-        db.ref(`ahorros_v4/data_${id}`).update(data);
-        db.ref(`ahorros_v4/challengeIds`).set(challengeIds);
+        setStatus('Guardando...');
+        try {
+            await db.ref(`ahorros_v4/data_${id}`).update(data);
+            await db.ref(`ahorros_v4/challengeIds`).set(challengeIds);
+            setStatus('Guardado ✓');
+        } catch (err) {
+            console.error('Error guardando en Firebase:', err);
+            setStatus('Error al guardar');
+        }
     }
 
     function addNewChallenge() {
@@ -450,7 +474,8 @@
 
     function resetProgress(id) {
         if(confirm("¿Limpiar progreso?")) {
-            localStorage.setItem(`save_${id}`, "[]");
+            if(!challengesData[id]) challengesData[id] = {};
+            challengesData[id].saved = [];
             saveToFirebase(id);
             refreshUI(id);
         }
