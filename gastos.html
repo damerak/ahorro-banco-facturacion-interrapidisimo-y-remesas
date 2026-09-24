@@ -308,12 +308,44 @@
     </div>
 </div>
 
-<script>
-    let dbData = JSON.parse(localStorage.getItem('budget_pro_v4')) || {};
+<div id="syncStatus" style="position:fixed; bottom:8px; right:12px; font-size:0.7rem; opacity:0.6; color:#ffffff;"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8UmZOWnI3_RFronTxFLYTVssTalnsiXI",
+      authDomain: "gastosprestamoscuentasnequi.firebaseapp.com",
+      databaseURL: "https://gastosprestamoscuentasnequi-default-rtdb.firebaseio.com",
+      projectId: "gastosprestamoscuentasnequi",
+      storageBucket: "gastosprestamoscuentasnequi.firebasestorage.app",
+      messagingSenderId: "350167767655",
+      appId: "1:350167767655:web:ea01b86a4ec3231c4352c2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    // Documento propio para este dashboard, dentro del mismo proyecto de Firebase.
+    const gastosRef = doc(db, "tablas", "gastos");
+
+    let dbData = {};
+    let lastMonth = "";
     const currency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+    const statusEl = document.getElementById('syncStatus');
+    let saveTimer = null;
+
+    function setStatus(text) {
+        if (statusEl) statusEl.innerText = text;
+    }
 
     function changeMonth() { loadMonthData(document.getElementById('monthSelector').value); }
-    
+
     function formatAndCalc(input) {
         let val = input.value.replace(/\D/g, "");
         input.value = val ? Number(val).toLocaleString('es-CO') : "";
@@ -335,9 +367,9 @@
         calculate();
     }
 
-    function toggleCheck(checkbox) { 
-        checkbox.parentElement.classList.toggle('is-checked', checkbox.checked); 
-        save(); 
+    function toggleCheck(checkbox) {
+        checkbox.parentElement.classList.toggle('is-checked', checkbox.checked);
+        save();
     }
 
     function calculate() {
@@ -354,7 +386,7 @@
         const balanceEl = document.getElementById('stat-saldo');
         balanceEl.innerText = currency.format(balance);
         balanceEl.style.color = balance < 0 ? 'var(--danger)' : 'var(--success)';
-        
+
         document.getElementById('sum-casa').innerText = currency.format(totalCasa);
         document.getElementById('sum-local').innerText = currency.format(totalLocal);
         save();
@@ -374,6 +406,8 @@
 
     function parse(s) { return parseFloat(s.toString().replace(/\./g, '')) || 0; }
 
+    // Guardado automático en Firebase con un pequeño retraso (debounce)
+    // para no disparar una escritura por cada tecla presionada.
     function save() {
         const m = document.getElementById('monthSelector').value;
         dbData[m] = {
@@ -382,8 +416,23 @@
             casa: grab('casa'),
             local: grab('local')
         };
-        localStorage.setItem('budget_pro_v4', JSON.stringify(dbData));
-        localStorage.setItem('last_month_viewed', m);
+        lastMonth = m;
+
+        setStatus('Guardando...');
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+            try {
+                await setDoc(gastosRef, {
+                    dbData,
+                    lastMonth,
+                    actualizado: new Date().toISOString()
+                });
+                setStatus('Guardado ✓');
+            } catch (err) {
+                console.error('Error guardando en Firebase:', err);
+                setStatus('Error al guardar');
+            }
+        }, 500);
     }
 
     function grab(type) {
@@ -411,11 +460,36 @@
         calculate();
     }
 
-    window.onload = () => {
-        const lastMonth = localStorage.getItem('last_month_viewed');
-        if (lastMonth) document.getElementById('monthSelector').value = lastMonth;
+    async function init() {
+        setStatus('Cargando...');
+        try {
+            const snap = await getDoc(gastosRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                dbData = data.dbData || {};
+                if (data.lastMonth) document.getElementById('monthSelector').value = data.lastMonth;
+                setStatus('Datos cargados de Firebase');
+            } else {
+                setStatus('Sin datos previos en Firebase');
+            }
+        } catch (err) {
+            console.error('Error cargando de Firebase:', err);
+            setStatus('Error al cargar');
+        }
         loadMonthData(document.getElementById('monthSelector').value);
-    };
+    }
+
+    // Exponer al scope global las funciones usadas por los atributos
+    // inline (oninput/onclick/onchange) del HTML, ya que este script
+    // es un módulo y sus funciones no son globales por defecto.
+    window.changeMonth = changeMonth;
+    window.formatAndCalc = formatAndCalc;
+    window.addItem = addItem;
+    window.toggleCheck = toggleCheck;
+    window.calculate = calculate;
+    window.save = save;
+
+    window.onload = init;
 </script>
 
 </body>
