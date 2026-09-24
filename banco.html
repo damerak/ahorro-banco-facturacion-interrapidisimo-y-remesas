@@ -44,7 +44,7 @@
 
         .monthly-summary {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             background-color: #f0f0f0;
             border-bottom: 2px solid black;
         }
@@ -180,18 +180,6 @@
             font-size: 14px;
         }
 
-        .btn-borrar-corr {
-            background: black;
-            color: white;
-            border: none;
-            width: 100%;
-            cursor: pointer;
-            height: 100%;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 10px;
-        }
-
         .has-data-dot {
             position: relative;
         }
@@ -219,18 +207,20 @@
             <div class="monthly-cell monthly-header">TRX DEPOSITO</div>
             <div class="monthly-cell monthly-header">TRX RETIRO</div>
             <div class="monthly-cell monthly-header">TOTAL COMISIÓN</div>
+            <div class="monthly-cell monthly-header">TRX COMPENSACION</div>
             
             <div class="monthly-cell monthly-value" id="m-entrada">$ 0</div>
             <div class="monthly-cell monthly-value" id="m-salida">$ 0</div>
             <div class="monthly-cell monthly-value" id="m-trx-dep">0</div>
             <div class="monthly-cell monthly-value" id="m-trx-ret">0</div>
             <div class="monthly-cell monthly-value" id="m-total-comision">$ 0</div>
+            <div class="monthly-cell monthly-value" id="m-trx-comp">0</div>
         </div>
 
         <div class="header-grid">
             <div class="cell bg-green">Saldo Inicio</div>
             <div class="cell bg-yellow text-red">$ <input type="text" id="saldo-inicio" value="0" oninput="formatAndCalc(this)"></div>
-            <div class="cell"><button class="btn-borrar-corr" onclick="resetCorresponsal()">Borrar Día</button></div>
+            <div class="cell"><input type="date" id="fecha-compensacion" oninput="handleFechaCompensacionChange()"></div>
             
             <!-- SECCIÓN MODIFICADA: 6 SECCIONES HORIZONTALES -->
             <div class="cell" style="grid-column: span 2; padding: 0; display: flex; border: 1px solid black;">
@@ -365,6 +355,7 @@
                 document.getElementById('saldo-inicio').value = savedData.saldoInicio || "0";
                 document.getElementById('comp-1').value = savedData.comp1 || "0";
                 document.getElementById('comp-2').value = savedData.comp2 || "0";
+                document.getElementById('fecha-compensacion').value = savedData.fechaCompensacion || "";
                 if (savedData.filas) savedData.filas.forEach(f => crearFilaCorr(f.tipo, f.valor));
                 crearFilaCorr(); 
                 calcularCorr();
@@ -382,6 +373,7 @@
                         document.getElementById('saldo-inicio').value = saldoFinalPrev.toLocaleString('es-CO');
                         document.getElementById('comp-1').value = "0";
                         document.getElementById('comp-2').value = "0";
+                        document.getElementById('fecha-compensacion').value = "";
                         crearFilaCorr(); 
                         calcularCorr();
                         calcularResumenMensual();
@@ -390,6 +382,7 @@
                     document.getElementById('saldo-inicio').value = "0";
                     document.getElementById('comp-1').value = "0";
                     document.getElementById('comp-2').value = "0";
+                    document.getElementById('fecha-compensacion').value = "";
                     crearFilaCorr(); 
                     calcularCorr();
                     calcularResumenMensual();
@@ -436,6 +429,11 @@
             if (tipo !== "" || valor !== "") crearFilaCorr();
         }
         calcularCorr();
+    }
+
+    function handleFechaCompensacionChange() {
+        saveData();
+        calcularResumenMensual();
     }
 
     function formatAndCalc(input) {
@@ -498,12 +496,13 @@
 
         db.ref('banco').once('value', (snapshot) => {
             const todosLosDias = snapshot.val();
-            let entradaMes = 0, salidaMes = 0, trxDepMes = 0, trxRetMes = 0, comisionTotalMes = 0;
+            let entradaMes = 0, salidaMes = 0, trxDepMes = 0, trxRetMes = 0, comisionTotalMes = 0, trxCompMes = 0;
 
             if (todosLosDias) {
                 for (let fechaKey in todosLosDias) {
                     if (fechaKey.startsWith(mesActual)) {
                         const diaData = todosLosDias[fechaKey];
+                        if (diaData.fechaCompensacion && diaData.fechaCompensacion.trim() !== "") trxCompMes++;
                         if (diaData.filas) {
                             diaData.filas.forEach(f => {
                                 const valor = parseMoney(f.valor);
@@ -528,6 +527,7 @@
             document.getElementById('m-trx-dep').innerText = trxDepMes;
             document.getElementById('m-trx-ret').innerText = trxRetMes;
             document.getElementById('m-total-comision').innerText = "$ " + Math.round(comisionTotalMes).toLocaleString('es-CO');
+            document.getElementById('m-trx-comp').innerText = trxCompMes;
         });
     }
 
@@ -543,17 +543,12 @@
             saldoInicio: document.getElementById('saldo-inicio').value,
             comp1: document.getElementById('comp-1').value,
             comp2: document.getElementById('comp-2').value,
+            fechaCompensacion: document.getElementById('fecha-compensacion').value,
             filas: filas
         };
         db.ref('banco/' + fecha).set(data).then(() => calcularResumenMensual());
     }
 
-    function resetCorresponsal() {
-        const fecha = inputFecha.value;
-        if(confirm(`¿Borrar datos del día ${fecha}?`)) {
-            db.ref('banco/' + fecha).remove().then(() => initCorresponsal());
-        }
-    }
 </script>
 </body>
 </html>
