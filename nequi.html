@@ -153,6 +153,13 @@
         .check-red { accent-color: var(--danger-color) !important; }
         tr.row-red { background-color: var(--row-red); }
 
+        /* Check "principal" de la fila: el primero marcado, el que suma */
+        input[type="checkbox"].chk-primary {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+            box-shadow: 0 0 6px var(--primary-color);
+        }
+
         @media (max-width: 1100px) {
             .header { flex-direction: column; gap: 10px; align-items: flex-start; }
             .btn-clear { align-self: flex-end; }
@@ -282,13 +289,17 @@
                 `;
                 container.appendChild(tr);
 
+                // Orden en que se van marcando los checks de categoría (0-4) en esta fila.
+                // El primero de este arreglo es el "principal": el único que suma.
+                tr._checkOrder = [];
+
                 const moneyInput = tr.querySelector('.input-money');
                 moneyInput.addEventListener('input', () => handleMoneyInput(moneyInput));
 
                 const checks = tr.querySelectorAll('.chk');
                 // Los primeros 5 checks (llave, inter, banco, davi, cuota)
                 for (let c = 0; c < 5; c++) {
-                    checks[c].addEventListener('change', handleCheckChange);
+                    checks[c].addEventListener('change', () => handleCheckChange(tr, c, checks[c]));
                 }
                 // El sexto check es la fila roja (bandera)
                 checks[5].addEventListener('change', () => handleRedRow(checks[5]));
@@ -309,9 +320,41 @@
             saveAll();
         }
 
-        function handleCheckChange() {
+        function handleCheckChange(tr, idx, checkbox) {
+            if (!tr._checkOrder) tr._checkOrder = [];
+
+            if (checkbox.checked) {
+                // Se marcó: si no estaba ya en el orden, se agrega al final.
+                if (!tr._checkOrder.includes(idx)) tr._checkOrder.push(idx);
+            } else {
+                // Se desmarcó: sale del orden (así el siguiente marcado pasa a ser el principal).
+                tr._checkOrder = tr._checkOrder.filter(i => i !== idx);
+            }
+
+            updatePrimaryHighlight(tr);
             updateTotal();
             saveAll();
+        }
+
+        // Resalta visualmente el check "principal" (el primero marcado) de la fila.
+        function updatePrimaryHighlight(tr) {
+            const checks = tr.querySelectorAll('.chk');
+            const primaryIdx = (tr._checkOrder && tr._checkOrder.length > 0) ? tr._checkOrder[0] : null;
+            for (let c = 0; c < 5; c++) {
+                checks[c].classList.toggle('chk-primary', c === primaryIdx);
+            }
+        }
+
+        // Reconstruye tr._checkOrder a partir de los checks ya marcados (usado al cargar datos
+        // guardados previamente, donde no se conoce el orden real en que se marcaron).
+        function rebuildCheckOrder(tr) {
+            const checks = tr.querySelectorAll('.chk');
+            const order = [];
+            for (let c = 0; c < 5; c++) {
+                if (checks[c].checked) order.push(c);
+            }
+            tr._checkOrder = order;
+            updatePrimaryHighlight(tr);
         }
 
         function updateTotal() {
@@ -327,20 +370,19 @@
                 const valor = parseInt(moneyStr.replace(/\./g, "")) || 0;
                 const checks = tr.querySelectorAll('.chk');
 
-                const isLlave = checks[0].checked;
-                const isInt = checks[1].checked;
-                const isBanco = checks[2].checked;
-                const isDaviplata = checks[3].checked;
-                const isCuota = checks[4].checked;
                 const isRed = checks[5].checked; // El sexto check es el rojo (bandera)
+
+                // Solo el check "principal" (el primero marcado) de la fila suma su valor.
+                const order = tr._checkOrder || [];
+                const primaryIdx = order.length > 0 ? order[0] : null;
 
                 if (!isRed) {
                     totalGeneral += valor;
-                    if (isLlave) totalLlave += valor;
-                    if (isInt) totalInt += valor;
-                    if (isBanco) totalBanco += valor;
-                    if (isDaviplata) totalDaviplata += valor;
-                    if (isCuota) totalCuota += valor;
+                    if (primaryIdx === 0) totalLlave += valor;
+                    if (primaryIdx === 1) totalInt += valor;
+                    if (primaryIdx === 2) totalBanco += valor;
+                    if (primaryIdx === 3) totalDaviplata += valor;
+                    if (primaryIdx === 4) totalCuota += valor;
                 }
             });
 
@@ -403,6 +445,9 @@
                                     }
                                 });
                             }
+                            // No se guarda el orden real en que se marcaron los checks,
+                            // así que se reconstruye tomando los ya marcados en orden de columna.
+                            rebuildCheckOrder(tr);
                         }
                     });
                     setStatus('Datos cargados de Firebase');
@@ -422,6 +467,8 @@
                     tr.querySelector('.input-money').value = "";
                     tr.querySelectorAll('.chk').forEach(c => c.checked = false);
                     tr.classList.remove('row-red');
+                    tr._checkOrder = [];
+                    updatePrimaryHighlight(tr);
                 });
                 updateTotal();
                 try {
