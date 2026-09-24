@@ -317,7 +317,7 @@
             const row = checkbox.closest('tr');
             checkbox.checked ? row.classList.add('row-red') : row.classList.remove('row-red');
             updateTotal();
-            saveAll();
+            saveNow();
         }
 
         function handleCheckChange(tr, idx, checkbox) {
@@ -333,7 +333,7 @@
 
             updatePrimaryHighlight(tr);
             updateTotal();
-            saveAll();
+            saveNow();
         }
 
         // Resalta visualmente el check "principal" (el primero marcado) de la fila.
@@ -400,13 +400,16 @@
             document.querySelectorAll('tbody tr').forEach(tr => {
                 const money = tr.querySelector('.input-money').value;
                 const checks = Array.from(tr.querySelectorAll('.chk')).map(c => c.checked);
-                allData.push({ money, checks });
+                // Se guarda también el orden real de marcado, para saber cuál es el
+                // "principal" al recargar la página (no se puede deducir solo de checks[]).
+                const order = tr._checkOrder || [];
+                allData.push({ money, checks, order });
             });
             return allData;
         }
 
-        // Guardado automático en Firebase con un pequeño retraso (debounce)
-        // para no disparar una escritura por cada tecla presionada.
+        // Guardado automático en Firebase con un pequeño retraso (debounce),
+        // pensado para no disparar una escritura por cada tecla presionada al escribir el valor.
         function saveAll() {
             setStatus('Guardando...');
             clearTimeout(saveTimer);
@@ -422,6 +425,24 @@
                     setStatus('Error al guardar');
                 }
             }, 500);
+        }
+
+        // Guardado inmediato (sin retraso), usado para los checkboxes: son eventos
+        // discretos (no como escribir), así que conviene guardarlos al instante y
+        // evitar perder el cambio si el usuario recarga la página justo después.
+        async function saveNow() {
+            setStatus('Guardando...');
+            clearTimeout(saveTimer);
+            try {
+                await setDoc(tablaRef, {
+                    rows: collectData(),
+                    actualizado: new Date().toISOString()
+                });
+                setStatus('Guardado ✓');
+            } catch (err) {
+                console.error('Error guardando en Firebase:', err);
+                setStatus('Error al guardar');
+            }
         }
 
         async function loadFromFirebase() {
@@ -445,9 +466,14 @@
                                     }
                                 });
                             }
-                            // No se guarda el orden real en que se marcaron los checks,
-                            // así que se reconstruye tomando los ya marcados en orden de columna.
-                            rebuildCheckOrder(tr);
+                            if (item.order && item.order.length > 0) {
+                                // Orden real guardado (marcado por el usuario): se usa tal cual.
+                                tr._checkOrder = item.order.filter(i => checks[i] && checks[i].checked);
+                                updatePrimaryHighlight(tr);
+                            } else {
+                                // Dato antiguo sin orden guardado: se reconstruye por columna.
+                                rebuildCheckOrder(tr);
+                            }
                         }
                     });
                     setStatus('Datos cargados de Firebase');
