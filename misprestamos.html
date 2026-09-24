@@ -234,9 +234,32 @@
         <div style="height: 50px;"></div>
     </div>
 
-    <script>
-        const STORAGE_KEY = 'control_prestamo_v20_final_persistencia';
-        
+    <div id="syncStatus" style="position:fixed; bottom:8px; right:12px; font-size:0.7rem; opacity:0.6; color:#ffffff;"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            setDoc
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyD8UmZOWnI3_RFronTxFLYTVssTalnsiXI",
+          authDomain: "gastosprestamoscuentasnequi.firebaseapp.com",
+          databaseURL: "https://gastosprestamoscuentasnequi-default-rtdb.firebaseio.com",
+          projectId: "gastosprestamoscuentasnequi",
+          storageBucket: "gastosprestamoscuentasnequi.firebasestorage.app",
+          messagingSenderId: "350167767655",
+          appId: "1:350167767655:web:ea01b86a4ec3231c4352c2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        // Documento distinto al de la otra tabla, dentro del mismo proyecto de Firebase.
+        const prestamoRef = doc(db, "tablas", "prestamo");
+
         const grid = document.getElementById('days-grid');
         const totalDisplay = document.getElementById('total-display');
         const headerCuota = document.getElementById('header-cuota');
@@ -244,10 +267,17 @@
         const inputPorcentaje = document.getElementById('input-porcentaje');
         const inputDias = document.getElementById('input-dias');
         const displayTotalFinal = document.getElementById('display-total-final');
+        const statusEl = document.getElementById('syncStatus');
 
         const formatter = new Intl.NumberFormat('es-CO', {
             style: 'currency', currency: 'COP', minimumFractionDigits: 0
         });
+
+        let saveTimer = null;
+
+        function setStatus(text) {
+            if (statusEl) statusEl.innerText = text;
+        }
 
         function handleManualInput(el) {
             if (el && el.id === 'input-prestado') {
@@ -329,7 +359,7 @@
             totalDisplay.textContent = formatter.format(restante < 0 ? 0 : restante);
         }
 
-        function saveData() {
+        function collectData() {
             const data = {
                 prestado: inputPrestado.value,
                 porcentaje: inputPorcentaje.value,
@@ -347,48 +377,94 @@
                     date: d ? d.value : ""
                 });
             }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            return data;
         }
 
-        function loadData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const data = JSON.parse(saved);
-                inputPrestado.value = data.prestado;
-                inputPorcentaje.value = data.porcentaje;
-                inputDias.value = data.dias;
-                
-                rebuildGrid(); 
+        // Guardado automático en Firebase con un pequeño retraso (debounce)
+        // para no disparar una escritura por cada tecla presionada.
+        function saveData() {
+            setStatus('Guardando...');
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(async () => {
+                try {
+                    await setDoc(prestamoRef, {
+                        ...collectData(),
+                        actualizado: new Date().toISOString()
+                    });
+                    setStatus('Guardado ✓');
+                } catch (err) {
+                    console.error('Error guardando en Firebase:', err);
+                    setStatus('Error al guardar');
+                }
+            }, 500);
+        }
 
-                data.checks.forEach((state, index) => {
-                    const id = index + 1;
-                    const card = document.getElementById(`card-${id}`);
-                    const cP = document.getElementById(`check-${id}`);
-                    const cN = document.getElementById(`pend-${id}`);
-                    const cD = document.getElementById(`date-${id}`);
-                    
-                    if (card) {
-                        if (cP) cP.checked = state.p; 
-                        if (cN) cN.checked = state.n;
-                        if (cD) cD.value = state.date || "";
-                        
-                        if (state.p) card.classList.add('checked');
-                        if (state.n) card.classList.add('is-pending');
-                    }
-                });
-                updateTotal();
-            } else {
+        async function loadData() {
+            setStatus('Cargando...');
+            try {
+                const snap = await getDoc(prestamoRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    inputPrestado.value = data.prestado || "";
+                    inputPorcentaje.value = data.porcentaje || 20;
+                    inputDias.value = data.dias || 30;
+
+                    rebuildGrid();
+
+                    (data.checks || []).forEach((state, index) => {
+                        const id = index + 1;
+                        const card = document.getElementById(`card-${id}`);
+                        const cP = document.getElementById(`check-${id}`);
+                        const cN = document.getElementById(`pend-${id}`);
+                        const cD = document.getElementById(`date-${id}`);
+
+                        if (card) {
+                            if (cP) cP.checked = state.p;
+                            if (cN) cN.checked = state.n;
+                            if (cD) cD.value = state.date || "";
+
+                            if (state.p) card.classList.add('checked');
+                            if (state.n) card.classList.add('is-pending');
+                        }
+                    });
+                    updateTotal();
+                    setStatus('Datos cargados de Firebase');
+                } else {
+                    inputPrestado.value = "2.000.000";
+                    rebuildGrid();
+                    setStatus('Sin datos previos en Firebase');
+                }
+            } catch (err) {
+                console.error('Error cargando de Firebase:', err);
                 inputPrestado.value = "2.000.000";
                 rebuildGrid();
+                setStatus('Error al cargar');
             }
         }
 
-        function resetAll() {
-            if (confirm('¿Reiniciar todo el sistema?')) {
-                localStorage.removeItem(STORAGE_KEY);
-                location.reload();
+        async function resetAll() {
+            if (confirm('¿Reiniciar todo el sistema? Esto también lo borrará en Firebase.')) {
+                inputPrestado.value = "2.000.000";
+                inputPorcentaje.value = 20;
+                inputDias.value = 30;
+                rebuildGrid();
+                try {
+                    await setDoc(prestamoRef, { ...collectData(), actualizado: new Date().toISOString() });
+                    setStatus('Sistema reiniciado');
+                } catch (err) {
+                    console.error('Error reiniciando en Firebase:', err);
+                    setStatus('Error al reiniciar');
+                }
             }
         }
+
+        // Exponer al scope global las funciones usadas por los atributos
+        // inline (oninput/onclick/onchange) del HTML, ya que este script
+        // es un módulo y sus funciones no son globales por defecto.
+        window.handleManualInput = handleManualInput;
+        window.toggleStatus = toggleStatus;
+        window.saveData = saveData;
+        window.resetAll = resetAll;
 
         loadData();
     </script>
