@@ -276,6 +276,7 @@
                     <div id="edit-ctrls-${id}" style="display:${editingState[id] ? 'flex' : 'none'}; margin-bottom:10px; justify-content:center; gap:10px;">
                         <button class="btn btn-edit" onclick="adjustCells(${id}, 1)">+ Cuadro</button>
                         <button class="btn btn-edit" onclick="adjustCells(${id}, -1)">- Cuadro</button>
+                        <button class="btn btn-edit" onclick="addCustomCells(${id})">+ Cuadros (cantidad)</button>
                     </div>
                     <table class="savings-table" id="table-${id}"></table>
                 </div>
@@ -424,6 +425,23 @@
         if(act === 1) currentVals.push(0); 
         else if(currentVals.length > 0) currentVals.pop();
         
+        if(!challengesData[id]) challengesData[id] = {};
+        challengesData[id].values = currentVals;
+        renderTable(id, currentVals, true);
+        calculateTotals(id);
+    }
+
+    function addCustomCells(id) {
+        const resp = prompt('¿Cuántos cuadros quieres agregar?');
+        if(resp === null) return; // canceló
+        const qty = parseInt(String(resp).replace(/\D/g, ''), 10);
+        if(!qty || qty < 1) { alert('Escribe un número válido mayor que 0.'); return; }
+        if(qty > 500) { alert('El máximo por vez es 500 cuadros.'); return; }
+
+        const inputs = document.getElementById(`table-${id}`).querySelectorAll('.input-edit');
+        const currentVals = Array.from(inputs).map(i => parseNumber(i.value));
+        for(let k = 0; k < qty; k++) currentVals.push(0);
+
         if(!challengesData[id]) challengesData[id] = {};
         challengesData[id].values = currentVals;
         renderTable(id, currentVals, true);
