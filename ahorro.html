@@ -160,6 +160,11 @@
             border: 1px solid var(--accent-green) !important;
         }
 
+        .cell-date {
+            display: block; font-size: 0.65rem; font-weight: normal;
+            opacity: 0.85; margin-top: 3px;
+        }
+
         .input-edit {
             background: #000; border: 1px solid var(--accent-blue);
             color: white; width: 85%; text-align: center; padding: 5px; border-radius: 4px;
@@ -298,6 +303,7 @@
                 challengesData[id].values = data.values || [0];
             }
             challengesData[id].saved = data.saved || [];
+            challengesData[id].dates = data.dates || {};
 
             setStatus('Datos cargados de Firebase');
         } catch (err) {
@@ -329,6 +335,7 @@
         const table = document.getElementById(`table-${id}`);
         if(!table) return;
         const saved = (challengesData[id] || {}).saved || [];
+        const dates = (challengesData[id] || {}).dates || {};
         table.innerHTML = '';
         let row;
         values.forEach((v, i) => {
@@ -338,7 +345,8 @@
                 cell.innerHTML = `<input type="text" class="input-edit" value="${formatNumber(v)}" oninput="handleIn(this, ${id})">`;
             } else {
                 if(saved.includes(i)) cell.className = 'cell-selected';
-                cell.innerText = `$${formatNumber(v)}`;
+                const fecha = saved.includes(i) ? dates[`d${i}`] : null;
+                cell.innerHTML = `$${formatNumber(v)}` + (fecha ? `<span class="cell-date">${fecha}</span>` : '');
                 cell.onclick = () => toggleCheck(id, i);
             }
         });
@@ -400,11 +408,22 @@
 
     function toggleCheck(id, idx) {
         let saved = (challengesData[id] || {}).saved || [];
-        if(saved.includes(idx)) saved = saved.filter(i => i !== idx);
-        else saved.push(idx);
-
         if(!challengesData[id]) challengesData[id] = {};
+        const dates = challengesData[id].dates || {};
+
+        if(saved.includes(idx)) {
+            saved = saved.filter(i => i !== idx);
+            delete dates[`d${idx}`];           // al desmarcar se borra la fecha
+        } else {
+            saved.push(idx);
+            const hoy = new Date();
+            const dd = String(hoy.getDate()).padStart(2, '0');
+            const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+            dates[`d${idx}`] = `${dd}/${mm}/${hoy.getFullYear()}`;
+        }
+
         challengesData[id].saved = saved;
+        challengesData[id].dates = dates;
         saveToFirebase(id);
         refreshUI(id);
     }
@@ -467,7 +486,8 @@
         const data = {
             name: cache.name || `Reto ${id}`,
             values: cache.values || [],
-            saved: cache.saved || []
+            saved: cache.saved || [],
+            dates: cache.dates || {}
         };
         setStatus('Guardando...');
         try {
