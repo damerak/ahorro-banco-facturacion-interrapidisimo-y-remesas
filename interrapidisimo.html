@@ -167,6 +167,13 @@
             <div class="table-container-inter" id="mainContainerInter"></div>
 
             <div class="footer-summary-inter">
+                <button class="btn" style="background:#6a1b9a; width:auto; align-self:center; margin:0;" onclick="openMensajeriaModal()">CARGAR MENSAJERÍA</button>
+            </div>
+
+            <div class="footer-summary-inter">
+                <div class="summary-box-inter"><span>TOTAL PAGOS (VALOR)</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color: #9c27b0;"><span>ICA (4.14 x 1000)</span><span id="totalIcaInter" class="val-display-inter" style="color: #7b1fa2;">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color: #ff9800;"><span>RETE FUENTE</span><span id="totalReteInter" class="val-display-inter" style="color: #e65100;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color:#00897b;">
                     <span>MENSAJERÍA EXPRESA</span>
                     <span class="val-display-inter" style="color:#00695c;">$ <span id="mensValorInter">0</span></span>
@@ -175,12 +182,6 @@
                     <span>CARGA</span>
                     <span class="val-display-inter" style="color:#1a237e;">$ <span id="cargaValorInter">0</span></span>
                 </div>
-            </div>
-
-            <div class="footer-summary-inter">
-                <div class="summary-box-inter"><span>TOTAL PAGOS (VALOR)</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
-                <div class="summary-box-inter" style="border-color: #9c27b0;"><span>ICA (4.14 x 1000)</span><span id="totalIcaInter" class="val-display-inter" style="color: #7b1fa2;">$ 0</span></div>
-                <div class="summary-box-inter" style="border-color: #ff9800;"><span>RETE FUENTE</span><span id="totalReteInter" class="val-display-inter" style="color: #e65100;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #009688;"><span>TOTAL GANADO</span><span id="totalNetoInter" class="val-display-inter" style="color: #00796b;">$ 0</span></div>
             </div>
         </div>
@@ -194,6 +195,30 @@
         <p style="font-size: 11px; color: #666;">Selecciona los días festivos para ocultarlos de la tabla.</p>
         <div class="calendar-grid" id="calendarGrid"></div>
         <button class="btn" style="background: var(--primary); margin-top: 20px;" onclick="closeHolidayModal()">CERRAR Y GUARDAR</button>
+    </div>
+</div>
+
+<!-- Modal para cargar varios valores de Mensajería/Carga del día en curso -->
+<div id="mensajeriaModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+    <div class="modal-content" style="width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto;">
+        <h3 style="margin-top:0">Cargar valores de hoy</h3>
+        <p style="font-size: 11px; color: #666; font-weight: normal !important;">Escribe cada valor (por ejemplo cada corte/caja del día). Se suman y se cargan automáticamente en el día de hoy.</p>
+        <div style="display:flex; gap:15px; justify-content:center; text-align:left;">
+            <div style="flex:1;">
+                <div style="font-weight:bold; margin-bottom:6px; color:#1a237e; text-align:center;">CARGA</div>
+                <div id="cargaRowsModal"></div>
+                <button type="button" class="btn" style="background:#3f51b5; margin-top:4px; padding:6px;" onclick="addModalRow('cargaRowsModal','carga-row-input')">+ FILA</button>
+                <div style="margin-top:8px; font-weight:bold; text-align:center;">TOTAL: $ <span id="cargaModalTotal">0</span></div>
+            </div>
+            <div style="flex:1;">
+                <div style="font-weight:bold; margin-bottom:6px; color:#00695c; text-align:center;">MENSAJERÍA EXPRESA</div>
+                <div id="mensRowsModal"></div>
+                <button type="button" class="btn" style="background:#00897b; margin-top:4px; padding:6px;" onclick="addModalRow('mensRowsModal','mens-row-input')">+ FILA</button>
+                <div style="margin-top:8px; font-weight:bold; text-align:center;">TOTAL: $ <span id="mensModalTotal">0</span></div>
+            </div>
+        </div>
+        <button class="btn" style="background: var(--secondary); margin-top:20px;" onclick="guardarMensajeriaModal()">GUARDAR</button>
+        <button class="btn" style="background:#888;" onclick="closeMensajeriaModal()">CANCELAR</button>
     </div>
 </div>
 
@@ -308,7 +333,7 @@
         totalNetoDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalNeto) : "0");
     }
 
-    function generateTablesInter() {
+    function generateTablesInter(callback) {
         const year = parseInt(yearSelectInter.value);
         const month = parseInt(monthSelectInter.value);
         const key = getStorageKeyInter();
@@ -347,6 +372,7 @@
                 containerInter.appendChild(createTableInter(daysCol1, savedData));
                 containerInter.appendChild(createTableInter(daysCol2, savedData));
                 calculateSummariesInter();
+                if (typeof callback === 'function') callback();
             });
         });
     }
@@ -462,6 +488,80 @@
         
         document.getElementById('holidayModal').style.display = 'none';
         generateTablesInter();
+    }
+
+    // --- MODAL: cargar varios valores del día para Carga / Mensajería Expresa ---
+    function addModalRow(containerId, cls) {
+        const div = document.createElement('div');
+        div.className = 'currency-col';
+        div.style = 'margin-bottom:5px; border:1px solid #ccc; border-radius:4px;';
+        div.onclick = function(){ this.querySelector('input').focus(); };
+        div.innerHTML = `<span class="currency-prefix">$</span><input type="text" class="${cls}" style="font-weight:bold;">`;
+        document.getElementById(containerId).appendChild(div);
+        const input = div.querySelector('input');
+        input.oninput = (e) => {
+            e.target.value = formatWithDotsInter(e.target.value);
+            updateModalTotals();
+        };
+    }
+
+    function updateModalTotals() {
+        let totalCarga = 0;
+        document.querySelectorAll('.carga-row-input').forEach(inp => totalCarga += parseInt(cleanDotsInter(inp.value)) || 0);
+        document.getElementById('cargaModalTotal').innerHTML = totalCarga > 0 ? formatWithDotsInter(totalCarga) : "0";
+
+        let totalMens = 0;
+        document.querySelectorAll('.mens-row-input').forEach(inp => totalMens += parseInt(cleanDotsInter(inp.value)) || 0);
+        document.getElementById('mensModalTotal').innerHTML = totalMens > 0 ? formatWithDotsInter(totalMens) : "0";
+    }
+
+    function openMensajeriaModal() {
+        document.getElementById('cargaRowsModal').innerHTML = '';
+        document.getElementById('mensRowsModal').innerHTML = '';
+        for (let i = 0; i < 6; i++) {
+            addModalRow('cargaRowsModal', 'small-input carga-row-input');
+            addModalRow('mensRowsModal', 'small-input mens-row-input');
+        }
+        updateModalTotals();
+        document.getElementById('mensajeriaModal').style.display = 'flex';
+    }
+
+    function closeMensajeriaModal() {
+        document.getElementById('mensajeriaModal').style.display = 'none';
+    }
+
+    function guardarMensajeriaModal() {
+        let totalCarga = 0;
+        document.querySelectorAll('.carga-row-input').forEach(inp => totalCarga += parseInt(cleanDotsInter(inp.value)) || 0);
+        let totalMens = 0;
+        document.querySelectorAll('.mens-row-input').forEach(inp => totalMens += parseInt(cleanDotsInter(inp.value)) || 0);
+
+        if (totalCarga === 0 && totalMens === 0) {
+            alert("No ingresaste ningún valor.");
+            return;
+        }
+
+        const today = new Date();
+        yearSelectInter.value = today.getFullYear();
+        monthSelectInter.value = today.getMonth();
+
+        generateTablesInter(() => {
+            const mName = today.toLocaleString('es-ES', { month: 'short' }).toUpperCase();
+            const label = `${mName}-${today.getDate()}`;
+            const row = document.querySelector(`.data-row-inter[data-date="${label}"]`);
+            if (row) {
+                const carInput = row.querySelector('.car-input');
+                const menInput = row.querySelector('.men-input');
+                const curCar = parseInt(cleanDotsInter(carInput.value)) || 0;
+                const curMen = parseInt(cleanDotsInter(menInput.value)) || 0;
+                carInput.value = formatWithDotsInter(curCar + totalCarga);
+                menInput.value = formatWithDotsInter(curMen + totalMens);
+                saveInterData();
+            } else {
+                alert("El día de hoy no aparece en la tabla (puede ser domingo o estar marcado como festivo). No se guardó.");
+            }
+            closeMensajeriaModal();
+        });
     }
 
     function clearAllFieldsInter() {
