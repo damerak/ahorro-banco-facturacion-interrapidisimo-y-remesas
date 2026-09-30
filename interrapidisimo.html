@@ -158,14 +158,27 @@
                 <button class="btn btn-clear" style="width: auto;" onclick="clearAllFieldsInter()">LIMPIAR MES</button>
                 <button class="btn btn-holiday" style="width: auto;" onclick="openHolidayModal()">FESTIVOS</button>
                 <div class="summary-box-inter" style="border-color: #2196F3; min-width: 90px; padding: 6px 10px;"><span>TOTAL ENVÍOS</span><span id="totalEnviosInter" class="val-display-inter" style="color: #1976D2;">0</span></div>
+                <div style="font-size: 14px !important; font-weight: bold !important; color: #333; max-width: 240px; line-height: 1.4;">
+                    <b>MENSAJERÍA EXPRESA:</b> Inferior a 5 Kg y Depende del volumen también<br>
+                    <b>CARGA:</b> 5 Kg en Adelante
+                </div>
             </div>
 
             <div class="table-container-inter" id="mainContainerInter"></div>
 
             <div class="footer-summary-inter">
-                <div class="summary-box-inter"><span>TOTAL VALOR</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
-                <div class="summary-box-inter" style="border-color: #f44336;"><span>20%</span><span id="totalGananciaInter" class="val-display-inter" style="color: #c62828;">$ 0</span></div>
-                <div class="summary-box-inter" style="border-color: #e91e63;"><span>18%</span><span id="totalGanancia18Inter" class="val-display-inter" style="color: #ad1457;">$ 0</span></div>
+                <div class="summary-box-inter" style="border-color:#00897b;">
+                    <span>MENSAJERÍA EXPRESA</span>
+                    <span class="val-display-inter" style="color:#00695c;">$ <span id="mensValorInter">0</span></span>
+                </div>
+                <div class="summary-box-inter" style="border-color:#3f51b5;">
+                    <span>CARGA</span>
+                    <span class="val-display-inter" style="color:#1a237e;">$ <span id="cargaValorInter">0</span></span>
+                </div>
+            </div>
+
+            <div class="footer-summary-inter">
+                <div class="summary-box-inter"><span>TOTAL PAGOS (VALOR)</span><span id="totalGeneralInter" class="val-display-inter">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #9c27b0;"><span>ICA (4.14 x 1000)</span><span id="totalIcaInter" class="val-display-inter" style="color: #7b1fa2;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #ff9800;"><span>RETE FUENTE</span><span id="totalReteInter" class="val-display-inter" style="color: #e65100;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #009688;"><span>TOTAL GANADO</span><span id="totalNetoInter" class="val-display-inter" style="color: #00796b;">$ 0</span></div>
@@ -206,11 +219,11 @@
     
     const totalGeneralDispInter = document.getElementById('totalGeneralInter');
     const totalEnviosDispInter = document.getElementById('totalEnviosInter');
-    const totalGananciaDispInter = document.getElementById('totalGananciaInter');
-    const totalGanancia18DispInter = document.getElementById('totalGanancia18Inter');
     const totalIcaDispInter = document.getElementById('totalIcaInter');
     const totalReteDispInter = document.getElementById('totalReteInter');
     const totalNetoDispInter = document.getElementById('totalNetoInter');
+    const cargaValorDispInter = document.getElementById('cargaValorInter');
+    const mensValorDispInter = document.getElementById('mensValorInter');
 
     function initInter() {
         const currentYear = new Date().getFullYear();
@@ -244,11 +257,12 @@
         const dataToSave = {};
         rows.forEach(row => {
             const dateKey = row.getAttribute('data-date');
-            const mVal = cleanDotsInter(row.querySelector('.currency-input').value);
+            const menVal = cleanDotsInter(row.querySelector('.men-input').value);
+            const carVal = cleanDotsInter(row.querySelector('.car-input').value);
             const aVal = row.querySelector('.val-a').value;
             const bVal = row.querySelector('.val-b').value;
-            if(mVal || aVal || bVal) {
-                dataToSave[dateKey] = { m: mVal, a: aVal, b: bVal };
+            if(menVal || carVal || aVal || bVal) {
+                dataToSave[dateKey] = { men: menVal, car: carVal, a: aVal, b: bVal };
             }
         });
         const key = getStorageKeyInter();
@@ -258,12 +272,15 @@
     }
 
     function calculateSummariesInter() {
-        let totalDineroRecaudado = 0;
+        let totalMensajeria = 0;
+        let totalCarga = 0;
         let totalCantidades = 0;
 
         document.querySelectorAll('.data-row-inter').forEach(row => {
-            const valStr = cleanDotsInter(row.querySelector('.currency-input').value);
-            totalDineroRecaudado += parseInt(valStr) || 0;
+            const menStr = cleanDotsInter(row.querySelector('.men-input').value);
+            const carStr = cleanDotsInter(row.querySelector('.car-input').value);
+            totalMensajeria += parseInt(menStr) || 0;
+            totalCarga += parseInt(carStr) || 0;
             
             const a = parseInt(row.querySelector('.val-a').value) || 0;
             const b = parseInt(row.querySelector('.val-b').value) || 0;
@@ -272,16 +289,20 @@
             row.querySelector('.row-total-inter').innerHTML = sumaFila > 0 ? sumaFila : "";
         });
 
-        const ganancia = Math.floor(totalDineroRecaudado * 0.20);
-        const ganancia18 = Math.floor(totalDineroRecaudado * 0.18);
-        const impuestoIca = Math.floor(ganancia * 0.00414);
-        const reteFuente = Math.floor(ganancia * 0.01);
-        const totalNeto = ganancia - impuestoIca - reteFuente;
+        mensValorDispInter.innerHTML = formatWithDotsInter(totalMensajeria) || "0";
+        cargaValorDispInter.innerHTML = formatWithDotsInter(totalCarga) || "0";
+
+        // Tal cual la liquidación real de Interrápidisimo: el TOTAL PAGOS (base de ICA y
+        // retención) es la suma directa de lo digitado en Mensajería Expresa + Carga,
+        // sin aplicar ningún porcentaje de comisión intermedio.
+        const totalDineroRecaudado = totalMensajeria + totalCarga;
+
+        const impuestoIca = Math.round(totalDineroRecaudado * 0.00414);
+        const reteFuente = Math.round(totalDineroRecaudado * 0.01);
+        const totalNeto = totalDineroRecaudado - impuestoIca - reteFuente;
         
         totalGeneralDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalDineroRecaudado) : "0");
         totalEnviosDispInter.innerHTML = totalCantidades;
-        totalGananciaDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(ganancia) : "0");
-        totalGanancia18DispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(ganancia18) : "0");
         totalIcaDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(impuestoIca) : "0");
         totalReteDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(reteFuente) : "0");
         totalNetoDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalNeto) : "0");
@@ -332,31 +353,39 @@
 
     function createTableInter(dayList, savedData) {
         const table = document.createElement('table');
-        table.innerHTML = `<thead><tr><th>MES</th><th>VALOR</th><th class="col-cant">C1</th><th class="col-cant">C2</th><th class="col-total">TOT</th></tr></thead>`;
+        table.innerHTML = `<thead><tr><th>MES</th><th>MENSAJERÍA</th><th>CARGA</th><th class="col-cant">C1</th><th class="col-cant">C2</th><th class="col-total">TOT</th></tr></thead>`;
         const tbody = document.createElement('tbody');
         dayList.forEach(dayObj => {
             const tr = document.createElement('tr');
             tr.className = 'data-row-inter';
             tr.setAttribute('data-date', dayObj.label);
-            const rowData = savedData[dayObj.label] || { m: "", a: "", b: "" };
+            const rowData = savedData[dayObj.label] || { men: "", car: "", a: "", b: "" };
             
             tr.innerHTML = `
                 <td class="date-col">${dayObj.label}</td>
                 <td style="padding:0">
-                    <div class="currency-col" onclick="this.querySelector('.currency-input').focus()">
+                    <div class="currency-col" onclick="this.querySelector('.men-input').focus()">
                         <span class="currency-prefix">$</span>
-                        <input class="currency-input" type="text" value="${formatWithDotsInter(rowData.m)}">
+                        <input class="currency-input men-input" type="text" value="${formatWithDotsInter(rowData.men)}">
+                    </div>
+                </td>
+                <td style="padding:0">
+                    <div class="currency-col" onclick="this.querySelector('.car-input').focus()">
+                        <span class="currency-prefix">$</span>
+                        <input class="currency-input car-input" type="text" value="${formatWithDotsInter(rowData.car)}">
                     </div>
                 </td>
                 <td class="col-cant"><input type="number" class="small-input val-a" value="${rowData.a || ""}"></td>
                 <td class="col-cant"><input type="number" class="small-input val-b" value="${rowData.b || ""}"></td>
                 <td class="row-total-inter col-total"></td>`;
             
-            const curInput = tr.querySelector('.currency-input');
-            curInput.oninput = (e) => { 
-                e.target.value = formatWithDotsInter(e.target.value); 
-                saveInterData(); 
-            };
+            const curInputs = tr.querySelectorAll('.currency-input');
+            curInputs.forEach(inp => {
+                inp.oninput = (e) => { 
+                    e.target.value = formatWithDotsInter(e.target.value); 
+                    saveInterData(); 
+                };
+            });
             
             const inputsCant = tr.querySelectorAll('.small-input');
             inputsCant.forEach(inp => {
