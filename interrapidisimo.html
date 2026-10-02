@@ -157,10 +157,6 @@
                 </div>
                 <button class="btn btn-holiday" style="width: auto;" onclick="openHolidayModal()">FESTIVOS</button>
                 <div class="summary-box-inter" style="border-color: #2196F3; min-width: 90px; padding: 6px 10px;"><span>TOTAL ENVÍOS</span><span id="totalEnviosInter" class="val-display-inter" style="color: #1976D2;">0</span></div>
-                <div style="font-size: 14px !important; font-weight: bold !important; color: #333; max-width: 240px; line-height: 1.4;">
-                    <b>MENSAJERÍA:</b> Inferior a 5 Kg<br>
-                    <b>CARGA:</b> 5 Kg en Adelante
-                </div>
                 <button class="btn" style="background:#6a1b9a; width: auto;" onclick="openMensajeriaModal()">CARGAR</button>
             </div>
 
@@ -202,12 +198,14 @@
         <div style="display:flex; gap:15px; justify-content:center; text-align:left;">
             <div style="flex:1;">
                 <div style="font-weight:bold; margin-bottom:6px; color:#1a237e; text-align:center;">CARGA</div>
+                <div style="font-size:11px; color:#555; text-align:center; margin-bottom:6px;">5 Kg en Adelante</div>
                 <div id="cargaRowsModal"></div>
                 <button type="button" class="btn" style="background:#3f51b5; margin-top:4px; padding:6px;" onclick="addModalRow('cargaRowsModal','carga-row-input')">+ FILA</button>
                 <div style="margin-top:8px; font-weight:bold; text-align:center;">TOTAL: $ <span id="cargaModalTotal">0</span></div>
             </div>
             <div style="flex:1;">
                 <div style="font-weight:bold; margin-bottom:6px; color:#00695c; text-align:center;">MENSAJERÍA EXPRESA</div>
+                <div style="font-size:11px; color:#555; text-align:center; margin-bottom:6px;">Inferior a 5 Kg</div>
                 <div id="mensRowsModal"></div>
                 <button type="button" class="btn" style="background:#00897b; margin-top:4px; padding:6px;" onclick="addModalRow('mensRowsModal','mens-row-input')">+ FILA</button>
                 <div style="margin-top:8px; font-weight:bold; text-align:center;">TOTAL: $ <span id="mensModalTotal">0</span></div>
