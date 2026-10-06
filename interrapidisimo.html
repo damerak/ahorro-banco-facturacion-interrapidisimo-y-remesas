@@ -112,6 +112,11 @@
 
         select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
 
+        #view-inter .cfg-box { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        #view-inter .cfg-input { width: 70px; padding: 6px; border: 1px solid #ccc; border-radius: 6px; text-align: center; }
+        #view-inter .cfg-input.wide { width: 110px; }
+        #view-inter .sub-valor { font-size: 11px !important; color: #555; margin-top: 2px; }
+
         /* MODAL CALENDARIO FESTIVOS */
         #holidayModal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; 
@@ -157,6 +162,9 @@
                 </div>
                 <button class="btn btn-holiday" style="width: auto;" onclick="openHolidayModal()">FESTIVOS</button>
                 <div class="summary-box-inter" style="border-color: #2196F3; min-width: 90px; padding: 6px 10px;"><span>TOTAL ENVÍOS</span><span id="totalEnviosInter" class="val-display-inter" style="color: #1976D2;">0</span></div>
+                <div class="cfg-box"><span>% CARGA</span><input id="pctCargaInter" class="cfg-input" type="text" inputmode="decimal" value="20"></div>
+                <div class="cfg-box"><span>% MENSAJ.</span><input id="pctMensInter" class="cfg-input" type="text" inputmode="decimal" value="20"></div>
+                <div class="cfg-box"><span>OTROS DESC. $</span><input id="otrosDescInter" class="cfg-input wide" type="text" inputmode="numeric" placeholder="0"></div>
                 <button class="btn" style="background:#6a1b9a; width: auto;" onclick="openMensajeriaModal()">CARGAR</button>
             </div>
 
@@ -167,12 +175,14 @@
                 <div class="summary-box-inter" style="border-color: #9c27b0;"><span>ICA (4.14 x 1000)</span><span id="totalIcaInter" class="val-display-inter" style="color: #7b1fa2;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color: #ff9800;"><span>RETE FUENTE</span><span id="totalReteInter" class="val-display-inter" style="color: #e65100;">$ 0</span></div>
                 <div class="summary-box-inter" style="border-color:#00897b;">
-                    <span>MENSAJERÍA EXPRESA</span>
+                    <span>MENSAJERÍA</span>
                     <span class="val-display-inter" style="color:#00695c;">$ <span id="mensValorInter">0</span></span>
+                    <span class="sub-valor">Valor: $ <span id="mensComisionInter">0</span></span>
                 </div>
                 <div class="summary-box-inter" style="border-color:#3f51b5;">
                     <span>CARGA</span>
                     <span class="val-display-inter" style="color:#1a237e;">$ <span id="cargaValorInter">0</span></span>
+                    <span class="sub-valor">Valor: $ <span id="cargaComisionInter">0</span></span>
                 </div>
                 <div class="summary-box-inter" style="border-color: #009688;"><span>TOTAL GANADO</span><span id="totalNetoInter" class="val-display-inter" style="color: #00796b;">$ 0</span></div>
             </div>
@@ -241,6 +251,34 @@
     const totalNetoDispInter = document.getElementById('totalNetoInter');
     const cargaValorDispInter = document.getElementById('cargaValorInter');
     const mensValorDispInter = document.getElementById('mensValorInter');
+    const cargaComisionDispInter = document.getElementById('cargaComisionInter');
+    const mensComisionDispInter = document.getElementById('mensComisionInter');
+    const pctCargaInput = document.getElementById('pctCargaInter');
+    const pctMensInput = document.getElementById('pctMensInter');
+    const otrosDescInput = document.getElementById('otrosDescInter');
+
+    // --- Porcentajes (se guardan local y en Firebase) y otros descuentos (por mes) ---
+    function parsePct(v) {
+        const n = parseFloat(String(v).replace(',', '.'));
+        return isNaN(n) ? 0 : n;
+    }
+    function applyConfigInter(cfg) {
+        if (!cfg) return;
+        if (cfg.pc !== undefined) pctCargaInput.value = cfg.pc;
+        if (cfg.pm !== undefined) pctMensInput.value = cfg.pm;
+    }
+    function saveConfigInter() {
+        const cfg = { pc: pctCargaInput.value, pm: pctMensInput.value };
+        localStorage.setItem('inter_config', JSON.stringify(cfg));
+        db.ref('logistica_config').set(cfg);
+    }
+    function loadConfigInter() {
+        try { applyConfigInter(JSON.parse(localStorage.getItem('inter_config'))); } catch(e) {}
+        db.ref('logistica_config').once('value', snap => {
+            const cfg = snap.val();
+            if (cfg) { localStorage.setItem('inter_config', JSON.stringify(cfg)); applyConfigInter(cfg); calculateSummariesInter(); }
+        });
+    }
 
     function initInter() {
         const currentYear = new Date().getFullYear();
@@ -253,6 +291,14 @@
         monthSelectInter.value = new Date().getMonth();
         monthSelectInter.onchange = generateTablesInter;
         yearSelectInter.onchange = generateTablesInter;
+        loadConfigInter();
+        [pctCargaInput, pctMensInput].forEach(inp => {
+            inp.oninput = () => { saveConfigInter(); calculateSummariesInter(); };
+        });
+        otrosDescInput.oninput = (e) => {
+            e.target.value = formatWithDotsInter(e.target.value);
+            saveInterData();
+        };
         generateTablesInter();
     }
 
@@ -282,6 +328,8 @@
                 dataToSave[dateKey] = { men: menVal, car: carVal, a: aVal, b: bVal };
             }
         });
+        const otros = cleanDotsInter(otrosDescInput.value);
+        if (otros) dataToSave._otros = otros;
         const key = getStorageKeyInter();
         localStorage.setItem(key, JSON.stringify(dataToSave));
         db.ref('logistica/' + key).set(dataToSave);
@@ -309,20 +357,33 @@
         mensValorDispInter.innerHTML = formatWithDotsInter(totalMensajeria) || "0";
         cargaValorDispInter.innerHTML = formatWithDotsInter(totalCarga) || "0";
 
-        // Tal cual la liquidación real de Interrápidisimo: el TOTAL PAGOS (base de ICA y
-        // retención) es la suma directa de lo digitado en Mensajería Expresa + Carga,
-        // sin aplicar ningún porcentaje de comisión intermedio.
-        const totalDineroRecaudado = totalMensajeria + totalCarga;
+        // Igual que la liquidación oficial de Interrápidisimo:
+        // 1) Se suma la base de Carga y la base de Mensajería Expresa por separado.
+        // 2) A cada base se le saca su porcentaje (valor al lado de la base en el PDF).
+        // 3) TOTAL PAGOS = valor Carga + valor Mensajería.
+        // 4) Base de descuentos = TOTAL PAGOS - otros descuentos (ej. "Mayor valor pagado cliente crédito").
+        // 5) ICA (4.14 x 1000) y Rete fuente (1%) se calculan sobre esa base.
+        // 6) TOTAL GANADO = TOTAL PAGOS - otros descuentos - ICA - Rete fuente.
+        const valorCarga = Math.round(totalCarga * parsePct(pctCargaInput.value) / 100);
+        const valorMens = Math.round(totalMensajeria * parsePct(pctMensInput.value) / 100);
+        const totalPagos = valorCarga + valorMens;
 
-        const impuestoIca = Math.round(totalDineroRecaudado * 0.00414);
-        const reteFuente = Math.round(totalDineroRecaudado * 0.01);
-        const totalNeto = totalDineroRecaudado - impuestoIca - reteFuente;
-        
-        totalGeneralDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalDineroRecaudado) : "0");
+        const otrosDesc = parseInt(cleanDotsInter(otrosDescInput.value)) || 0;
+        const baseDescuentos = Math.max(totalPagos - otrosDesc, 0);
+
+        const impuestoIca = Math.round(baseDescuentos * 0.00414);
+        const reteFuente = Math.round(baseDescuentos * 0.01);
+        const totalNeto = totalPagos - otrosDesc - impuestoIca - reteFuente;
+
+        cargaComisionDispInter.innerHTML = formatWithDotsInter(valorCarga) || "0";
+        mensComisionDispInter.innerHTML = formatWithDotsInter(valorMens) || "0";
+
+        const hayDatos = totalPagos > 0;
+        totalGeneralDispInter.innerHTML = "$ " + (hayDatos ? formatWithDotsInter(totalPagos) : "0");
         totalEnviosDispInter.innerHTML = totalCantidades;
-        totalIcaDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(impuestoIca) : "0");
-        totalReteDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(reteFuente) : "0");
-        totalNetoDispInter.innerHTML = "$ " + (totalDineroRecaudado > 0 ? formatWithDotsInter(totalNeto) : "0");
+        totalIcaDispInter.innerHTML = "$ " + (hayDatos ? formatWithDotsInter(impuestoIca) : "0");
+        totalReteDispInter.innerHTML = "$ " + (hayDatos ? formatWithDotsInter(reteFuente) : "0");
+        totalNetoDispInter.innerHTML = "$ " + (hayDatos ? formatWithDotsInter(totalNeto) : "0");
     }
 
     function generateTablesInter(callback) {
@@ -361,6 +422,7 @@
                     date.setDate(date.getDate() + 1);
                 }
                 
+                otrosDescInput.value = formatWithDotsInter(savedData._otros || "");
                 containerInter.appendChild(createTableInter(daysCol1, savedData));
                 containerInter.appendChild(createTableInter(daysCol2, savedData));
                 calculateSummariesInter();
